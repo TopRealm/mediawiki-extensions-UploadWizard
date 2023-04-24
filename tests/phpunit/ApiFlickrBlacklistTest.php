@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\UploadWizard\Tests;
 
 use ApiTestCase;
+use Http;
 use MediaWiki\Extension\UploadWizard\Config;
 use MediaWiki\Extension\UploadWizard\FlickrBlacklist;
 use MockHttpTrait;
@@ -171,10 +172,10 @@ class ApiFlickrBlacklistTest extends ApiTestCase {
 			$this->markTestSkipped( 'This test needs a Flickr API key to work' );
 		}
 		if ( !isset( $config['flickrApiUrl'] )
-			// FIXME: This will always return null due to MockHttpTrait.
-			|| $this->getServiceContainer()->getHttpRequestFactory()->get( $config['flickrApiUrl'] ) === null
+			// FIXME: This will always return false due to MockHttpTrait.
+			|| Http::get( $config['flickrApiUrl'] ) === false
 		) {
-			// MediaWiki\Http\HttpRequestFactory::get returns null if the server is unreachable.
+			// Http::get returns false if the server is unreachable.
 			// Sometimes unit tests may be run in places without network access.
 			$this->markTestSkipped( $config['flickrApiUrl'] . ' is unreachable.' );
 		}
