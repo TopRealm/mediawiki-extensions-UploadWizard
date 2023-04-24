@@ -1,12 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Brettchenweber",
 			"Creepario",
 			"Inkowik",
 			"Kghbln",
 			"Metalhead64",
-			"Predatorix"
+			"Predatorix",
+			"Brettchenweber"
 		]
 	},
 	"apihelp-flickrblacklist-description": "Bestätige eine Flickr-URL, indem du die Nutzerkennung (NSID) für das Eintragen in die Negativliste benutzt.\n\nWenn sie mit der <var>list</var>-Option benutzt wird, gibt sie alle Kennungen wieder, die in der Negativliste stehen.",
