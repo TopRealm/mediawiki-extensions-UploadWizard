@@ -9,6 +9,8 @@
 	 * @cfg {Array} [classes] Classes to apply to the ULS container div
 	 */
 	uw.UlsWidget = function UWUlsWidget( config ) {
+		var i;
+
 		uw.UlsWidget.parent.call( this );
 
 		this.$element = $( '<div>' )
@@ -27,7 +29,9 @@
 			)
 			.addClass( 'oo-ui-dropdownWidget' )
 			.addClass( 'oo-ui-widget-enabled' );
-		this.$element.addClass( config.classes );
+		for ( i = 0; i < config.classes.length; i++ ) {
+			this.$element.addClass( config.classes[ i ] );
+		}
 
 		// Show the ULS when a user tabs into the language selection field
 		this.$element.find( '.oo-ui-dropdownWidget-handle' ).on( 'keyup', function ( e ) {

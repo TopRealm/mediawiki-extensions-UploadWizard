@@ -157,7 +157,7 @@
 		},
 
 		remove: function () {
-			this.$selector.empty();
+			this.$selector.html( '' );
 		},
 
 		/**

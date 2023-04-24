@@ -133,12 +133,6 @@
 			} );
 			this.mainFields.push( this.otherDetailsField );
 
-			this.locationInput = new uw.LocationDetailsWidget( { showHeading: true } );
-			this.locationInputField = new uw.FieldLayout( this.locationInput, {
-				label: mw.message( 'mwe-upwiz-location' ).text()
-			} );
-			this.mainFields.push( this.locationInputField );
-
 			/* Build the form for the file upload */
 			this.$form = $( '<form id="mwe-upwiz-detailsform' + this.upload.index + '"></form>' ).addClass( 'detailsForm' );
 			this.$form.append(
@@ -179,7 +173,6 @@
 			$moreDetailsDiv = $( '<div>' );
 
 			$moreDetailsDiv.append(
-				this.locationInputField.$element,
 				this.otherDetailsField.$element
 			);
 
@@ -192,16 +185,13 @@
 				.makeCollapsible( { collapsed: true } );
 
 			// Expand collapsed sections if the fields within were changed (e.g. by metadata copier)
-			this.locationInput.on( 'change', function () {
-				$moreDetailsWrapperDiv.data( 'mw-collapsible' ).expand();
-			} );
 			this.otherDetails.on( 'change', function () {
 				$moreDetailsWrapperDiv.data( 'mw-collapsible' ).expand();
 			} );
 
 			this.$form.append(
 				$moreDetailsWrapperDiv
-			);
+			); 
 
 			// Add in remove control to form
 			this.removeCtrl = new OO.ui.ButtonWidget( {
@@ -444,7 +434,6 @@
 			this.prefillDate();
 			this.prefillTitle();
 			this.prefillDescription();
-			this.prefillLocation();
 		},
 
 		/**
@@ -594,72 +583,6 @@
 		},
 
 		/**
-		 * Prefill location input from image info and metadata
-		 *
-		 * As of MediaWiki 1.18, the exif parser translates the rational GPS data tagged by the camera
-		 * to decimal format.  Let's just use that.
-		 */
-		prefillLocation: function () {
-			var dir,
-				m = this.upload.imageinfo.metadata,
-				modified = false,
-				values = {};
-
-			if ( mw.UploadWizard.config.defaults.lat ) {
-				values.latitude = mw.UploadWizard.config.defaults.lat;
-				modified = true;
-			}
-			if ( mw.UploadWizard.config.defaults.lon ) {
-				values.longitude = mw.UploadWizard.config.defaults.lon;
-				modified = true;
-			}
-			if ( mw.UploadWizard.config.defaults.heading ) {
-				values.heading = mw.UploadWizard.config.defaults.heading;
-				modified = true;
-			}
-
-			if ( m ) {
-				dir = m.gpsimgdirection || m.gpsdestbearing;
-
-				if ( dir ) {
-					if ( /^\d+\/\d+$/.test( dir ) ) {
-						// Apparently it can take the form "x/y" instead of
-						// a decimal value. Mighty silly, but let's save it.
-						dir = dir.split( '/' );
-						dir = parseInt( dir[ 0 ], 10 ) / parseInt( dir[ 1 ], 10 );
-					}
-
-					values.heading = dir;
-
-					modified = true;
-				}
-
-				// Prefill useful stuff only
-				if ( Number( m.gpslatitude ) && Number( m.gpslongitude ) ) {
-					values.latitude = m.gpslatitude;
-					values.longitude = m.gpslongitude;
-					modified = true;
-				} else if (
-					this.upload.file &&
-					this.upload.file.location &&
-					this.upload.file.location.latitude &&
-					this.upload.file.location.longitude
-				) {
-					values.latitude = this.upload.file.location.latitude;
-					values.longitude = this.upload.file.location.longitude;
-					modified = true;
-				}
-			}
-
-			this.locationInput.setSerialized( values );
-
-			if ( modified ) {
-				this.$form.find( '.mwe-more-details' )
-					.data( 'mw-collapsible' ).expand();
-			}
-		},
-
-		/**
 		 * Get a machine-readable representation of the current state of the upload details. It can be
 		 * passed to #setSerialized to restore this state (or to set it for another instance of the same
 		 * class).
@@ -681,7 +604,6 @@
 				description: this.descriptionsDetails.getSerialized(),
 				date: this.dateDetails.getSerialized(),
 				categories: this.categoriesDetails.getSerialized(),
-				location: this.locationInput.getSerialized(),
 				other: this.otherDetails.getSerialized(),
 				campaigns: this.campaignDetailsFields.map( function ( field ) {
 					return field.fieldWidget.getSerialized();
@@ -736,9 +658,6 @@
 			}
 			if ( serialized.categories ) {
 				this.categoriesDetails.setSerialized( serialized.categories );
-			}
-			if ( serialized.location ) {
-				this.locationInput.setSerialized( serialized.location );
 			}
 			if ( serialized.other ) {
 				this.otherDetails.setSerialized( serialized.other );
@@ -807,8 +726,6 @@
 
 			wikiText += '=={{int:filedesc}}==\n';
 			wikiText += '{{Information\n' + info + '}}\n';
-
-			wikiText += this.locationInput.getWikiText() + '\n';
 
 			// add an "anything else" template if needed
 			wikiText += this.otherDetails.getWikiText() + '\n\n';
