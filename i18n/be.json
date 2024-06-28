@@ -13,13 +13,15 @@
 			"Тест",
 			"Хомелка",
 			"Plaga med",
-			"Maksim L."
+			"Maksim L.",
+			"Чаховіч Уладзіслаў"
 		]
 	},
 	"uploadwizard": "Майстар загрузкі",
 	"uploadwizard-desc": "Майстар загрузак, зручны інструмент для запампоўвання мультымедыя",
 	"tag-uploadwizard": "Upload Wizard",
 	"tag-uploadwizard-description": "Загрузкі, зробленыя з дапамогай Upload Wizard",
+	"tag-uploadwizard-flickr": "Flickr",
 	"tag-uploadwizard-flickr-description": "Загрузкі з Flickr, зрабленыя з дапамогай Upload Wizard",
 	"right-mass-upload": "Пакетная загрузка мноства файлаў за раз з дапамогай Майстра загрузкі",
 	"action-mass-upload": "рабіць пакетную загрузку мноства файлаў за раз з дапамогай Майстра загрузкі",
@@ -248,7 +250,7 @@
 	"mwe-upwiz-error-date-license-mismatch": "Выбраная дата не адпавядае ліцэнзіі ($1).",
 	"mwe-upwiz-error-date-license-unlikely": "Выбраная дата, імаверна, няправільная, улічваючы ліцэнзію ($1).",
 	"mwe-upwiz-error-blank": "Гэтае значэнне неабходнае",
-	"mwe-upwiz-error-too-long": "Гэты запіс занадта доўгі.\nКалі ласка, упэўніцеся, што ён ўтрымлівае не больш за $1 {{PLURAL:$1|сімвал|сімвалы|сімвалаў}}.",
+	"mwe-upwiz-error-too-long": "Гэты запіс занадта доўгі.\nКалі ласка, упэўніцеся, што ён змяшчае не больш за $1 {{PLURAL:$1|сімвал|сімвалы|сімвалаў}}.",
 	"mwe-upwiz-error-too-short": "Гэты запіс занадта кароткі.\nКалі ласка, упэўніцеся, што ён змяшчае не менш за $1 {{PLURAL:$1|сімвал|сімвалы|сімвалаў}}.",
 	"mwe-upwiz-error-title-too-long": "Гэтая назва занадта доўгая.\nКалі ласка, упэўніцеся, што гэта назва не даўжэй за $1 {{PLURAL:$1|байт|байты|байтаў}}.",
 	"mwe-upwiz-error-title-too-short": "Гэтая назва занадта кароткая.\nКалі ласка, упэўніцеся, што гэта назва не карацей за $1 {{PLURAL:$1|байт|байты|байтаў}}.",
@@ -260,9 +262,9 @@
 	"mwe-upwiz-error-title-extension": "Вам не трэба дадаваць пашырэнне файла. Проста пераканайцеся, што назва змястоўная для чалавека, а праграма паклапоціцца пра астатняе.",
 	"mwe-upwiz-error-title-protected": "Гэтая назва адпавядае ахаванай старонцы ў гэтай вікі. Выберыце іншую назву, калі ласка.",
 	"mwe-upwiz-error-title-duplicate": "Гэта назва была зададзена для больш чым аднаго файла, які вы збіраецеся запампаваць. Знакі падкрэслення разглядаюцца як прабелы, пашырэнне файла дадаецца аўтаматычна.",
-	"mwe-upwiz-error-license-wikitext-missing": "Вы выбралі магчымасць, якая патрабуе ад dас уводу вікі-тэксту.",
+	"mwe-upwiz-error-license-wikitext-missing": "Вы выбралі магчымасць, якая патрабуе ўводу вікіразметкі.",
 	"mwe-upwiz-error-license-wikitext-too-short": "Уведзены вікі-тэкст занадта малы, каб быць ліцэнзіяй",
-	"mwe-upwiz-error-license-wikitext-too-long": "Уведзены Вамі вікі-тэкст занадта доўгі.",
+	"mwe-upwiz-error-license-wikitext-too-long": "Уведзеная вамі вікіразметка занадта доўгая.",
 	"mwe-upwiz-error-license-wikitext-missing-template": "Вікітэкст, які вы ўвялі, не змяшчае слушнага шаблону ліцэнзіі.",
 	"mwe-upwiz-error-patent-disagree": "Вы павінны пагадзіцца з умовамі.",
 	"mwe-upwiz-error-pageprops-missing-page": "Не ўдалося атрымаць уласцівасці старонкі: старонка (пакуль) не існуе.",
@@ -306,7 +308,7 @@
 	"mwe-upwiz-license-cc-by-sa-2.0": "Creative Commons Attribution ShareAlike 2.0 ([$2 юрыдычны тэкст])",
 	"mwe-upwiz-license-cc-by-2.0": "Creative Commons Attribution 2.0 ([$2 юрыдычны тэкст])",
 	"mwe-upwiz-license-cc-zero": "Creative Commons CC0 Waiver (перадае ўсе правы, як грамадскі набытак: [$2 юрыдычны тэкст])",
-	"mwe-upwiz-license-custom": "Ліцэнзія апісваецца наступным вікі-тэкстам (павінен утрымоўваць карэктную [$2 пазнаку капірайта]):",
+	"mwe-upwiz-license-custom": "Ліцэнзія апісваецца наступнай вікіразметкай (павінна змяшчаць слушную [$2 пазнаку капірайта]):",
 	"mwe-upwiz-license-fal": "Free Art License",
 	"mwe-upwiz-license-own-pd": "Адмова ад усіх правоў згодна з ліцэнзіяй Creative Commons Zero (як грамадскі набытак)",
 	"mwe-upwiz-license-pd-old-100": "Аўтар памёр больш чым за 100 гадоў таму",
@@ -372,7 +374,7 @@
 	"mwe-upwiz-prefs-def-license-custom": "Іншая стандартная ліцэнзія",
 	"mwe-upwiz-prefs-def-license-custom-help": "Гэта поле выкарыстоўваецца толькі калі вы выбралі апошні варыянт вышэй.",
 	"mwe-upwiz-prefs-license-name": "Імя аўтара",
-	"mwe-upwiz-prefs-license-name-help": "Па змоўчанні, калі поле застаецца пустым, выкарыстоўваецца імя ўдзельніка",
+	"mwe-upwiz-prefs-license-name-help": "Прадвызначана, калі поле застаецца пустым, выкарыстоўваецца імя ўдзельніка",
 	"mwe-upwiz-prefs-license-own": "Уласная праца — $1",
 	"mwe-upwiz-prefs-license-thirdparty": "Чужая праца — $1",
 	"mwe-upwiz-prefs-skiptutorial": "Прапусціць уступную даведку пра ліцэнзаванне",
@@ -391,5 +393,5 @@
 	"mwe-upwiz-upload-comment-own-work": "Загрузіў уласны твор з дапамогай Майстра загрузкі",
 	"mwe-upwiz-upload-comment-third-party": "Загрузіў твор з дапамогай Майстра загрузкі; аўтар: $1, крыніца: $2",
 	"mwe-upwiz-metadata-notice-header": "Асабістыя звесткі",
-	"mwe-upwiz-metadata-notice-description": "Метададзеныя EXIF у гэтым файле могуць утрымліваць месцазнаходжанне або іншыя асабістыя звесткі, аўтаматычна дададзеныя вашай камерай. Даведайцеся больш пра тое, як правіць або выдаляць метададзеныя EXIF."
+	"mwe-upwiz-metadata-notice-description": "Метаданыя EXIF у гэтым файле могуць мець інфармацыю пра месцазнаходжанне або іншыя асабістыя звесткі, аўтаматычна дададзеныя вашай камерай. Даведайцеся больш пра тое, як правіць або выдаляць метаданыя EXIF."
 }
