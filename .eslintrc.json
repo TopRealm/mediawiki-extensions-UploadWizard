@@ -12,8 +12,6 @@
 		"max-len": "off",
 		"mediawiki/class-doc": "warn",
 		"mediawiki/msg-doc": "warn",
-		"jquery/no-each-util": "off",
-		"jquery/no-map-util": "off",
 		"jsdoc/no-undefined-types": [
 			"warn",
 			{
@@ -22,7 +20,9 @@
 				]
 			}
 		],
-		"no-shadow": "warn"
+		"no-shadow": "warn",
+		"es-x/no-symbol-prototype-description": "warn",
+		"es-x/no-typed-arrays": "warn"
 	},
 	"settings": {
 		"jsdoc": {
