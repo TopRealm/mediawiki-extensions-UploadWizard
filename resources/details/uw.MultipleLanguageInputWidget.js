@@ -3,24 +3,24 @@
 	/**
 	 * A multi-language input field in UploadWizard's "Details" step form.
 	 *
-	 * @class
+	 * @class uw.MultipleLanguageInputWidget
 	 * @extends uw.DetailsWidget
-	 * @mixes OO.ui.mixin.GroupElement
+	 * @mixins OO.ui.mixin.GroupElement
+	 * @constructor
 	 * @param {Object} [config]
-	 * @param {boolean} [config.required=true]
-	 * @param {mw.Message} [config.label] Text for label
-	 * @param {mw.Message} [config.placeholder] Placeholder text for input field
-	 * @param {mw.Message} [config.remove] Title text for remove icon
-	 * @param {mw.Message} [config.errorBlank] Error message for blank input
-	 * @param {number} [config.minLength=0] Minimum input length
-	 * @param {number} [config.maxLength=99999] Maximum input length
-	 * @param {Object} [config.languages] { langcode: text } map of languages
+	 * @cfg {boolean} [required=true]
+	 * @cfg {mw.Message} [label] Text for label
+	 * @cfg {mw.Message} [placeholder] Placeholder text for input field
+	 * @cfg {mw.Message} [remove] Title text for remove icon
+	 * @cfg {mw.Message} [error] Error message
+	 * @cfg {number} [minLength=0] Minimum input length
+	 * @cfg {number} [maxLength=99999] Maximum input length
+	 * @cfg {Object} [languages] { langcode: text } map of languages
 	 */
 	uw.MultipleLanguageInputWidget = function UWMultipleLanguageInputWidget( config ) {
-		this.config = Object.assign( {
+		this.config = $.extend( {
 			required: true,
 			label: mw.message( '' ),
-			errorBlank: mw.message( 'mwe-upwiz-error-blank' ),
 			languages: this.getLanguageOptions()
 		}, config );
 		uw.MultipleLanguageInputWidget.super.call( this );
@@ -31,8 +31,10 @@
 			classes: [ 'mwe-upwiz-multipleLanguageInputWidget-addItem' ],
 			framed: true,
 			icon: 'add',
+			flags: [ 'progressive' ],
 			label: this.getLabelText()
 		} );
+		this.addButton.connect( this, { click: [ 'addLanguageInput', this.config ] } );
 
 		// if a language becomes available because the input gets removed,
 		// or unavailable because it gets added, we'll need to update other
@@ -54,47 +56,43 @@
 		);
 
 		// Add empty input (non-removable if this field is required)
-		this.addLanguageInput( Object.assign( {}, this.config, { removable: !this.required } ) );
-		// Clicking the button will add new, removable, language inputs
-		this.addButton.connect( this, { click: [ 'addLanguageInput', Object.assign( {}, this.config, { removable: true } ) ] } );
+		this.addLanguageInput( $.extend( {}, this.config, { canBeRemoved: !this.required } ) );
 	};
 	OO.inheritClass( uw.MultipleLanguageInputWidget, uw.DetailsWidget );
 	OO.mixinClass( uw.MultipleLanguageInputWidget, OO.ui.mixin.GroupElement );
-	OO.mixinClass( uw.MultipleLanguageInputWidget, uw.ValidatableElement );
 
 	/**
 	 * @param {Object} config
 	 * @param {string} [text]
 	 */
 	uw.MultipleLanguageInputWidget.prototype.addLanguageInput = function ( config, text ) {
-		const allLanguages = this.config.languages,
-			unusedLanguages = this.getUnusedLanguages();
+		var allLanguages = this.config.languages,
+			unusedLanguages = this.getUnusedLanguages(),
+			languages = {},
+			item;
 
 		if ( unusedLanguages.length === 0 ) {
 			return;
 		}
 
-		let languages = {};
 		// only add given language + unused/remaining languages - we don't want
 		// languages that have already been selected to show up in the next dropdown...
 		if ( config.defaultLanguage ) {
 			languages[ config.defaultLanguage ] = allLanguages[ config.defaultLanguage ];
-			languages = Object.assign( {}, languages, unusedLanguages );
+			languages = $.extend( {}, languages, unusedLanguages );
 		} else {
 			languages = unusedLanguages;
 		}
 
-		config = Object.assign( {}, config, { languages: languages } );
-		const input = new uw.SingleLanguageInputWidget( config );
-		input.setText( text || '' );
+		config = $.extend( {}, config, { languages: languages } );
+		item = new uw.SingleLanguageInputWidget( config );
+		item.setText( text || '' );
 
 		// if a language is changed, we'll need to update other language dropdowns
 		// to reflect the change
-		input.connect( this, { select: 'onChangeLanguages' } );
-		// forward change events from the input to this widget
-		input.connect( this, { change: [ 'emit', 'change' ] } );
+		item.connect( this, { select: 'onChangeLanguages' } );
 
-		this.addItems( [ new uw.FieldLayout( input ) ] );
+		this.addItems( [ item ] );
 	};
 
 	/**
@@ -105,19 +103,22 @@
 	 * with the updated language selections.
 	 */
 	uw.MultipleLanguageInputWidget.prototype.onChangeLanguages = function () {
-		const allLanguages = this.config.languages,
+		var allLanguages = this.config.languages,
 			unusedLanguages = this.getUnusedLanguages(),
-			items = this.getItems();
+			items = this.getItems(),
+			languages,
+			item,
+			i;
 
-		for ( let i = 0; i < items.length; i++ ) {
-			const input = items[ i ].fieldWidget;
+		for ( i = 0; i < items.length; i++ ) {
+			item = items[ i ];
 
 			// only add existing language + unused/remaining languages - we don't want
 			// languages that have already been selected to show up in the next dropdown...
-			let languages = {};
-			languages[ input.getLanguage() ] = allLanguages[ input.getLanguage() ];
-			languages = Object.assign( {}, languages, unusedLanguages );
-			input.updateLanguages( languages );
+			languages = {};
+			languages[ item.getLanguage() ] = allLanguages[ item.getLanguage() ];
+			languages = $.extend( {}, languages, unusedLanguages );
+			item.updateLanguages( languages );
 		}
 	};
 
@@ -128,12 +129,11 @@
 	 * @return {Object}
 	 */
 	uw.MultipleLanguageInputWidget.prototype.getUsedLanguages = function () {
-		const allLanguages = this.config.languages,
+		var allLanguages = this.config.languages,
 			items = this.getItems();
 
-		return items.reduce( ( obj, item ) => {
-			const input = item.fieldWidget;
-			const languageCode = input.getLanguage();
+		return items.reduce( function ( obj, item ) {
+			var languageCode = item.getLanguage();
 			obj[ languageCode ] = allLanguages[ languageCode ];
 			return obj;
 		}, {} );
@@ -146,11 +146,11 @@
 	 * @return {Object}
 	 */
 	uw.MultipleLanguageInputWidget.prototype.getUnusedLanguages = function () {
-		const allLanguages = this.config.languages,
+		var allLanguages = this.config.languages,
 			usedLanguageCodes = Object.keys( this.getUsedLanguages() );
 
-		return Object.keys( allLanguages ).reduce( ( remaining, language ) => {
-			if ( !usedLanguageCodes.includes( language ) ) {
+		return Object.keys( allLanguages ).reduce( function ( remaining, language ) {
+			if ( usedLanguageCodes.indexOf( language ) < 0 ) {
 				remaining[ language ] = allLanguages[ language ];
 			}
 			return remaining;
@@ -161,7 +161,7 @@
 	 * Update the button label after adding or removing inputs.
 	 */
 	uw.MultipleLanguageInputWidget.prototype.recount = function () {
-		const text = this.getLabelText(),
+		var text = this.getLabelText(),
 			unusedLanguages = this.getUnusedLanguages();
 
 		this.addButton.setLabel( text );
@@ -173,7 +173,7 @@
 	 * @return {string}
 	 */
 	uw.MultipleLanguageInputWidget.prototype.getLabelText = function () {
-		let text = '', msg;
+		var text = '', msg;
 		if ( this.config.label.exists() ) {
 			// clone the original object: `.params` doesn't replace existing
 			// params so follow-up calls here would otherwise just keep adding
@@ -189,8 +189,10 @@
 	 * @return {Object}
 	 */
 	uw.MultipleLanguageInputWidget.prototype.getLanguageOptions = function () {
-		const languages = {};
-		for ( const code in mw.UploadWizard.config.uwLanguages ) {
+		var languages, code;
+
+		languages = {};
+		for ( code in mw.UploadWizard.config.uwLanguages ) {
 			if ( Object.prototype.hasOwnProperty.call( mw.UploadWizard.config.uwLanguages, code ) ) {
 				languages[ code ] = mw.UploadWizard.config.uwLanguages[ code ];
 			}
@@ -201,39 +203,43 @@
 	/**
 	 * @inheritdoc
 	 */
-	uw.MultipleLanguageInputWidget.prototype.validate = function ( thorough ) {
-		// Gather errors from each item
-		const status = new mw.uploadWizard.ValidationStatus(),
-			inputPromises = this.getItems().map( ( item ) => item.validate( thorough ) );
+	uw.MultipleLanguageInputWidget.prototype.getErrors = function () {
+		var self = this,
+			// Gather errors from each item
+			errorPromises = this.getItems().map( function ( item ) {
+				return item.getErrors();
+			} );
 
-		// check whether we have any content at all (if required)
-		if ( thorough && this.required && this.getWikiText() === '' ) {
-			status.addError( this.config.errorBlank );
-		}
-
-		// TODO Check for duplicate languages
-
-		return uw.ValidationStatus.mergePromises( ...inputPromises ).then(
-			// input (if any) in single language fields is fine
-			() => status.getErrors().length === 0 ? status.resolve() : status.reject(),
-			// there was an error in one of the single language inputs; we'll still want
-			// to reject, but those child messages need not be added into this status
-			// object, since they'll already be displayed within those child widgets
-			() => status.reject()
-		);
+		return $.when.apply( $, errorPromises ).then( function () {
+			var errors = [];
+			// Fold all errors into a single one (they are displayed in the UI for each item, but we still
+			// need to return an error here to prevent form submission).
+			if ( [ ...arguments ].some( ( arg ) => arg.length ) ) {
+				// One of the items has errors
+				errors.push( self.config.error );
+			}
+			// And add some more:
+			if ( this.required && this.getWikiText() === '' ) {
+				errors.push( mw.message( 'mwe-upwiz-error-blank' ) );
+			}
+			// TODO Check for duplicate languages
+			return errors;
+		}.bind( this ) );
 	};
 
 	/**
-	 * @return {Object} an object of `{ language code: text }` pairs
+	 * @return {Object} Object where the properties are language codes & values are input
 	 */
 	uw.MultipleLanguageInputWidget.prototype.getValues = function () {
-		const values = {},
-			items = this.getItems();
+		var values = {},
+			widgets = this.getItems(),
+			language,
+			text,
+			i;
 
-		for ( let i = 0; i < items.length; i++ ) {
-			const input = items[ i ].fieldWidget;
-			const language = input.getLanguage();
-			const text = input.getText();
+		for ( i = 0; i < widgets.length; i++ ) {
+			language = widgets[ i ].getLanguage();
+			text = widgets[ i ].getText();
 
 			if ( text !== '' ) {
 				values[ language ] = text;
@@ -249,7 +255,11 @@
 	uw.MultipleLanguageInputWidget.prototype.getWikiText = function () {
 		// Some code here and in mw.UploadWizardDetails relies on this function returning an empty
 		// string when there are some inputs, but all are empty.
-		return this.getItems().map( ( item ) => item.fieldWidget.getWikiText() ).filter( ( wikiText ) => !!wikiText ).join( '\n' );
+		return this.getItems().map( function ( widget ) {
+			return widget.getWikiText();
+		} ).filter( function ( wikiText ) {
+			return !!wikiText;
+		} ).join( '\n' );
 	};
 
 	/**
@@ -257,7 +267,9 @@
 	 * @return {Object} See #setSerialized
 	 */
 	uw.MultipleLanguageInputWidget.prototype.getSerialized = function () {
-		const inputs = this.getItems().map( ( item ) => item.fieldWidget.getSerialized() );
+		var inputs = this.getItems().map( function ( widget ) {
+			return widget.getSerialized();
+		} );
 		return {
 			inputs: inputs
 		};
@@ -270,32 +282,16 @@
 	 *   see uw.SingleLanguageInputWidget#setSerialized
 	 */
 	uw.MultipleLanguageInputWidget.prototype.setSerialized = function ( serialized ) {
-		let config = this.config,
+		var config = this.config,
 			i;
 
 		// remove all existing
 		this.removeItems( this.getItems() );
 
 		for ( i = 0; i < serialized.inputs.length; i++ ) {
-			config = Object.assign( {}, config, {
-				defaultLanguage: serialized.inputs[ i ].language,
-				removable: serialized.inputs[ i ].removable
-			} );
-
+			config = $.extend( {}, config, { defaultLanguage: serialized.inputs[ i ].language } );
 			this.addLanguageInput( config, serialized.inputs[ i ].text );
 		}
-	};
-
-	/**
-	 * @param {boolean} required
-	 */
-	uw.MultipleLanguageInputWidget.prototype.setRequired = function ( required ) {
-		this.required = !!required;
-		this.getItems()[ 0 ].fieldWidget.setRemovable( !this.required );
-
-		// emit change event - while no content has changed, the state has, and
-		// whatever (lack of) content there was may now have become (in)valid
-		this.emit( 'change' );
 	};
 
 }( mw.uploadWizard ) );

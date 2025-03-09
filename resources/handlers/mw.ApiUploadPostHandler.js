@@ -3,7 +3,6 @@
 	 * Represents an object which send a direct request to the MediaWiki API.
 	 * This is used when there is no actual file payload (eg. Flickr import)
 	 *
-	 * @class
 	 * @param {mw.UploadWizardUpload} upload current upload
 	 * @param {mw.Api} api
 	 */
@@ -23,8 +22,8 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.ApiUploadPostHandler.prototype.submit = function () {
-		let tempname = this.upload.getFilename();
-		const ext = tempname.split( '.' ).pop();
+		var tempname = this.upload.getFilename(),
+			ext = tempname.split( '.' ).pop();
 
 		// Limit filename length to 240 bytes (limit hardcoded in UploadBase.php).
 		if ( tempname.length > 240 ) {

@@ -2,8 +2,8 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use MediaWiki\Content\Content;
-use MediaWiki\Content\JsonContentHandler;
+use Content;
+use JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
@@ -54,7 +54,7 @@ class CampaignContentHandler extends JsonContentHandler {
 	) {
 		'@phan-var CampaignContent $content';
 		$title = Title::castFromPageReference( $cpoParams->getPage() );
-		if ( !$title ) {
+		if ( $title === null ) {
 			throw new UnexpectedValueException( '$title shouldn\'t be NULL' );
 		}
 

@@ -7,7 +7,6 @@
  *
  * @param uw
  */
-// eslint-disable-next-line no-unused-vars
 ( function ( uw ) {
 	/**
 	 * Constructor for objects representing uploads. The workhorse of this entire extension.
@@ -19,8 +18,9 @@
 	 * There is an "empty" fileInput which is invisibly floating above certain buttons in the interface, like "Add a file". When
 	 * this fileInput gets a file, this upload becomes 'filled'.
 	 *
-	 * @class
-	 * @mixes OO.EventEmitter
+	 * @class mw.UploadWizardUpload
+	 * @mixins OO.EventEmitter
+	 * @constructor
 	 * @param {uw.controller.Step} controller
 	 * @param {File} file
 	 */
@@ -171,7 +171,7 @@
 	 * @return {string} basename
 	 */
 	mw.UploadWizardUpload.prototype.getBasename = function () {
-		const path = this.getFilename();
+		var path = this.getFilename();
 
 		if ( path === undefined || path === null ) {
 			return '';
@@ -204,14 +204,16 @@
 	 * @return {jQuery.Promise} A promise, resolved when we're done
 	 */
 	mw.UploadWizardUpload.prototype.extractMetadataFromJpegMeta = function () {
-		const deferred = $.Deferred();
+		var binReader, jpegmeta,
+			deferred = $.Deferred(),
+			upload = this;
 		if ( this.file && this.file.type === 'image/jpeg' ) {
-			const binReader = new FileReader();
-			binReader.onerror = () => {
+			binReader = new FileReader();
+			binReader.onerror = function () {
 				deferred.resolve();
 			};
-			binReader.onload = () => {
-				let binStr, arr, i, meta;
+			binReader.onload = function () {
+				var binStr, arr, i, meta;
 				if ( binReader.result === null ) {
 					// Contrary to documentation, this sometimes fires for unsuccessful loads (T136235)
 					deferred.resolve();
@@ -228,20 +230,20 @@
 					}
 				}
 				try {
-					const jpegmeta = require( 'mediawiki.libs.jpegmeta' );
-					meta = jpegmeta( binStr, this.file.fileName );
+					jpegmeta = require( 'mediawiki.libs.jpegmeta' );
+					meta = jpegmeta( binStr, upload.file.fileName );
 					// eslint-disable-next-line camelcase, no-underscore-dangle
 					meta._binary_data = null;
 				} catch ( e ) {
 					meta = null;
 				}
-				this.extractMetadataFromJpegMetaCallback( meta );
+				upload.extractMetadataFromJpegMetaCallback( meta );
 				deferred.resolve();
 			};
 			if ( 'readAsBinaryString' in binReader ) {
-				binReader.readAsBinaryString( this.file );
+				binReader.readAsBinaryString( upload.file );
 			} else if ( 'readAsArrayBuffer' in binReader ) {
-				binReader.readAsArrayBuffer( this.file );
+				binReader.readAsArrayBuffer( upload.file );
 			}
 		} else {
 			deferred.resolve();
@@ -255,7 +257,7 @@
 	 * @param {Object} meta As returned by jpegmeta
 	 */
 	mw.UploadWizardUpload.prototype.extractMetadataFromJpegMetaCallback = function ( meta ) {
-		let pixelHeightDim, pixelWidthDim, degrees;
+		var pixelHeightDim, pixelWidthDim, degrees;
 
 		if ( meta !== undefined && meta !== null && typeof meta === 'object' ) {
 			if ( this.imageinfo.metadata === undefined ) {
@@ -311,16 +313,19 @@
 	 * @param {Object} imageinfo JSON object obtained from API result.
 	 */
 	mw.UploadWizardUpload.prototype.extractImageInfo = function ( imageinfo ) {
-		for ( const key in imageinfo ) {
+		var key,
+			upload = this;
+
+		for ( key in imageinfo ) {
 			// we get metadata as list of key-val pairs; convert to object for easier lookup. Assuming that EXIF fields are unique.
 			if ( key === 'metadata' ) {
 				if ( this.imageinfo.metadata === undefined ) {
 					this.imageinfo.metadata = {};
 				}
 				if ( imageinfo.metadata && imageinfo.metadata.length ) {
-					imageinfo.metadata.forEach( ( pair ) => {
+					imageinfo.metadata.forEach( function ( pair ) {
 						if ( pair !== undefined ) {
-							this.imageinfo.metadata[ pair.name.toLowerCase() ] = pair.value;
+							upload.imageinfo.metadata[ pair.name.toLowerCase() ] = pair.value;
 						}
 					} );
 				}
@@ -341,7 +346,7 @@
 	 * @param {number} [height] Height of thumbnail. Will force 'url' to be added to props
 	 */
 	mw.UploadWizardUpload.prototype.getStashImageInfo = function ( callback, props, width, height ) {
-		const params = {
+		var params = {
 			prop: 'stashimageinfo',
 			siifilekey: this.fileKey,
 			siiprop: props.join( '|' )
@@ -366,7 +371,7 @@
 		}
 
 		if ( width !== undefined || height !== undefined ) {
-			if ( !props.includes( 'url' ) ) {
+			if ( props.indexOf( 'url' ) === -1 ) {
 				props.push( 'url' );
 			}
 			if ( width !== undefined ) {
@@ -391,15 +396,15 @@
 	 * @param {number} [height] Height of thumbnail. Will force 'url' to be added to props
 	 */
 	mw.UploadWizardUpload.prototype.getImageInfo = function ( callback, props, width, height ) {
-		const requestedTitle = this.title.getPrefixedText();
+		var requestedTitle, params;
 
 		function ok( data ) {
-			let found;
+			var found;
 
 			if ( data && data.query && data.query.pages ) {
 				found = false;
-				Object.keys( data.query.pages ).forEach( ( pageId ) => {
-					const page = data.query.pages[ pageId ];
+				Object.keys( data.query.pages ).forEach( function ( pageId ) {
+					var page = data.query.pages[ pageId ];
 					if ( page.title && page.title === requestedTitle && page.imageinfo ) {
 						found = true;
 						callback( page.imageinfo );
@@ -424,14 +429,15 @@
 			props = [];
 		}
 
-		const params = {
+		requestedTitle = this.title.getPrefixedText();
+		params = {
 			prop: 'imageinfo',
 			titles: requestedTitle,
 			iiprop: props.join( '|' )
 		};
 
 		if ( width !== undefined || height !== undefined ) {
-			if ( !props.includes( 'url' ) ) {
+			if ( props.indexOf( 'url' ) === -1 ) {
 				props.push( 'url' );
 			}
 			if ( width !== undefined ) {
@@ -451,7 +457,7 @@
 	 * @return {mw.ApiUploadFormDataHandler|mw.ApiUploadPostHandler} upload handler object
 	 */
 	mw.UploadWizardUpload.prototype.getUploadHandler = function () {
-		let constructor; // must be the name of a function in 'mw' namespace
+		var constructor; // must be the name of a function in 'mw' namespace
 
 		if ( !this.uploadHandler ) {
 			constructor = 'ApiUploadFormDataHandler';
@@ -476,7 +482,7 @@
 	 *     couldn't be generated
 	 */
 	mw.UploadWizardUpload.prototype.getApiThumbnail = function ( width, height ) {
-		const deferred = $.Deferred();
+		var deferred = $.Deferred();
 
 		function thumbnailPublisher( thumbnails ) {
 			if ( thumbnails === null ) {
@@ -487,19 +493,14 @@
 				// they are actually there yet. Keep trying to set the source ( which should trigger "error" or "load" event )
 				// on the image. If it loads publish the event with the image. If it errors out too many times, give up and publish
 				// the event with a null.
-				thumbnails.forEach( ( thumb ) => {
+				thumbnails.forEach( function ( thumb ) {
+					var timeoutMs, image;
+
 					if ( thumb.thumberror || ( !( thumb.thumburl && thumb.thumbwidth && thumb.thumbheight ) ) ) {
 						mw.log.warn( 'mw.UploadWizardUpload::getThumbnail> Thumbnail error or missing information' );
 						deferred.resolve( null );
 						return;
 					}
-
-					// try to load this image with exponential backoff
-					// if the delay goes past 8 seconds, it gives up and publishes the event with null
-					let timeoutMs = 100;
-					const image = document.createElement( 'img' );
-					image.width = thumb.thumbwidth;
-					image.height = thumb.thumbheight;
 
 					// executing this should cause a .load() or .error() event on the image
 					function setSrc() {
@@ -508,15 +509,21 @@
 						image.src = thumb.thumburl + '?' + Math.random();
 					}
 
+					// try to load this image with exponential backoff
+					// if the delay goes past 8 seconds, it gives up and publishes the event with null
+					timeoutMs = 100;
+					image = document.createElement( 'img' );
+					image.width = thumb.thumbwidth;
+					image.height = thumb.thumbheight;
 					$( image )
-						.on( 'load', () => {
+						.on( 'load', function () {
 							// publish the image to anyone who wanted it
 							deferred.resolve( image );
 						} )
-						.on( 'error', () => {
+						.on( 'error', function () {
 							// retry with exponential backoff
 							if ( timeoutMs < 8000 ) {
-								setTimeout( () => {
+								setTimeout( function () {
 									timeoutMs = timeoutMs * 2 + Math.round( Math.random() * ( timeoutMs / 10 ) );
 									setSrc();
 								}, timeoutMs );
@@ -547,7 +554,7 @@
 	 * @return {number} orientation in degrees: 0, 90, 180 or 270
 	 */
 	mw.UploadWizardUpload.prototype.getOrientationDegrees = function () {
-		let orientation = 0;
+		var orientation = 0;
 		if ( this.imageinfo && this.imageinfo.metadata && this.imageinfo.metadata.orientation ) {
 			switch ( this.imageinfo.metadata.orientation ) {
 				case 8:
@@ -581,11 +588,12 @@
 	 * @return {number}
 	 */
 	mw.UploadWizardUpload.prototype.getScalingFromConstraints = function ( image, constraints ) {
-		let scaling = 1;
-		Object.keys( constraints ).forEach( ( dim ) => {
-			const constraint = constraints[ dim ];
+		var scaling = 1;
+		Object.keys( constraints ).forEach( function ( dim ) {
+			var s,
+				constraint = constraints[ dim ];
 			if ( constraint && image[ dim ] > constraint ) {
-				const s = constraint / image[ dim ];
+				s = constraint / image[ dim ];
 				if ( s < scaling ) {
 					scaling = s;
 				}
@@ -598,23 +606,24 @@
 	 * Given an image (already loaded), dimension constraints
 	 * return canvas object scaled & transformed ( & rotated if metadata indicates it's needed )
 	 *
-	 * @deprecated 1.41 browsers apply orientation themselves since 2020. Remove this in 2026'ish
 	 * @private
 	 * @param {HTMLImageElement} image
 	 * @param {Object} constraints Width & height constraints
 	 * @return {HTMLCanvasElement|null}
 	 */
 	mw.UploadWizardUpload.prototype.getTransformedCanvasElement = function ( image, constraints ) {
-		let angle, rotation = 0;
+		var angle, scaling, width, height,
+			dimensions, dx, dy, x, y, $canvas, ctx,
+			scaleConstraints = constraints,
+			rotation = 0;
 
 		// if this wiki can rotate images to match their EXIF metadata,
-		// we should do the same in our preview if the browser does not apply it already
+		// we should do the same in our preview
 		if ( mw.config.get( 'wgFileCanRotate' ) ) {
 			angle = this.getOrientationDegrees();
 			rotation = angle ? 360 - angle : 0;
 		}
 
-		let scaleConstraints;
 		// swap scaling constraints if needed by rotation...
 		if ( rotation === 90 || rotation === 270 ) {
 			scaleConstraints = {};
@@ -626,21 +635,20 @@
 			}
 		}
 
-		const scaling = this.getScalingFromConstraints( image, scaleConstraints );
+		scaling = this.getScalingFromConstraints( image, scaleConstraints );
 
-		const width = image.width * scaling;
-		const height = image.height * scaling;
+		width = image.width * scaling;
+		height = image.height * scaling;
 
-		let dimensions = { width: width, height: height };
+		dimensions = { width: width, height: height };
 		if ( rotation === 90 || rotation === 270 ) {
 			dimensions = { width: height, height: width };
 		}
 
 		// Start drawing at offset 0,0
-		const dx = 0;
-		const dy = 0;
+		dx = 0;
+		dy = 0;
 
-		let x, y;
 		switch ( rotation ) {
 			// If a rotation is applied, the direction of the axis
 			// changes as well. You can derive the values below by
@@ -664,8 +672,8 @@
 				break;
 		}
 
-		const $canvas = $( '<canvas>' ).attr( dimensions );
-		const ctx = $canvas[ 0 ].getContext( '2d' );
+		$canvas = $( '<canvas>' ).attr( dimensions );
+		ctx = $canvas[ 0 ].getContext( '2d' );
 		ctx.clearRect( dx, dy, width, height );
 		ctx.rotate( rotation / 180 * Math.PI );
 		try {
@@ -694,7 +702,7 @@
 	 * @return {HTMLImageElement} with same src, but different attrs
 	 */
 	mw.UploadWizardUpload.prototype.getBrowserScaledImageElement = function ( image, constraints ) {
-		const scaling = this.getScalingFromConstraints( image, constraints );
+		var scaling = this.getScalingFromConstraints( image, constraints );
 		return $( '<img>' )
 			.attr( {
 				width: parseInt( image.width * scaling, 10 ),
@@ -713,7 +721,8 @@
 	 * @return {HTMLCanvasElement|HTMLImageElement}
 	 */
 	mw.UploadWizardUpload.prototype.getScaledImageElement = function ( image, width, height ) {
-		const constraints = {};
+		var constraints = {},
+			transform;
 
 		if ( width ) {
 			constraints.width = width;
@@ -722,8 +731,8 @@
 			constraints.height = height;
 		}
 
-		if ( mw.canvas.isAvailable() && !CSS.supports( 'image-orientation', 'from-image' ) ) {
-			const transform = this.getTransformedCanvasElement( image, constraints );
+		if ( mw.canvas.isAvailable() ) {
+			transform = this.getTransformedCanvasElement( image, constraints );
 			if ( transform ) {
 				return transform;
 			}
@@ -742,7 +751,8 @@
 	 *   containing a thumbnail, or resolved with `null` when one can't be produced
 	 */
 	mw.UploadWizardUpload.prototype.getThumbnail = function ( width, height ) {
-		const deferred = $.Deferred();
+		var upload = this,
+			deferred = $.Deferred();
 
 		if ( this.thumbnailPromise[ width + 'x' + height ] ) {
 			return this.thumbnailPromise[ width + 'x' + height ];
@@ -752,29 +762,29 @@
 		/**
 		 * @param {HTMLImageElement|null} image
 		 */
-		const imageCallback = ( image ) => {
+		function imageCallback( image ) {
 			if ( image === null ) {
-				this.ui.setStatus( 'mwe-upwiz-thumbnail-failed' );
+				upload.ui.setStatus( 'mwe-upwiz-thumbnail-failed' );
 				deferred.resolve( image );
 				return;
 			}
 
-			image = this.getScaledImageElement( image, width, height );
+			image = upload.getScaledImageElement( image, width, height );
 			deferred.resolve( image );
-		};
+		}
 
 		this.extractMetadataFromJpegMeta()
-			.then( this.makePreview.bind( this, width ) )
+			.then( upload.makePreview.bind( upload, width ) )
 			.done( imageCallback )
-			.fail( () => {
+			.fail( function () {
 				// Can't generate the thumbnail locally, get the thumbnail via API after
 				// the file is uploaded. Queries are cached, so if this thumbnail was
 				// already fetched for some reason, we'll get it immediately.
-				if ( this.state !== 'new' && this.state !== 'transporting' && this.state !== 'error' ) {
-					this.getApiThumbnail( width, height ).done( imageCallback );
+				if ( upload.state !== 'new' && upload.state !== 'transporting' && upload.state !== 'error' ) {
+					upload.getApiThumbnail( width, height ).done( imageCallback );
 				} else {
-					this.once( 'success', () => {
-						this.getApiThumbnail( width, height ).done( imageCallback );
+					upload.once( 'success', function () {
+						upload.getApiThumbnail( width, height ).done( imageCallback );
 					} );
 				}
 			} );
@@ -797,21 +807,23 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.UploadWizardUpload.prototype.makePreview = function ( width ) {
-		const deferred = $.Deferred();
+		var first, video, url, dataUrlReader,
+			deferred = $.Deferred(),
+			upload = this;
 
 		// do preview if we can
 		if ( this.isPreviewable() ) {
 			// open video and get frame via canvas
 			if ( this.isVideo() ) {
-				let first = true;
-				const video = document.createElement( 'video' );
+				first = true;
+				video = document.createElement( 'video' );
 
-				video.addEventListener( 'loadedmetadata', () => {
+				video.addEventListener( 'loadedmetadata', function () {
 					// seek 2 seconds into video or to half if shorter
 					video.currentTime = Math.min( 2, video.duration / 2 );
 					video.volume = 0;
 				} );
-				video.addEventListener( 'seeked', () => {
+				video.addEventListener( 'seeked', function () {
 					// Firefox 16 sometimes does not work on first seek, seek again
 					if ( first ) {
 						first = false;
@@ -820,36 +832,37 @@
 					} else {
 						// Chrome sometimes shows black frames if grabbing right away.
 						// wait 500ms before grabbing frame
-						setTimeout( () => {
-							const canvas = document.createElement( 'canvas' );
+						setTimeout( function () {
+							var context,
+								canvas = document.createElement( 'canvas' );
 							canvas.width = width;
 							canvas.height = Math.round( canvas.width * video.videoHeight / video.videoWidth );
-							const context = canvas.getContext( '2d' );
+							context = canvas.getContext( '2d' );
 							try {
 								// More ridiculous exceptions, see the comment in #getTransformedCanvasElement
 								context.drawImage( video, 0, 0, canvas.width, canvas.height );
 							} catch ( err ) {
 								deferred.reject();
 							}
-							this.loadImage( canvas.toDataURL(), deferred );
-							this.URL().revokeObjectURL( video.url );
+							upload.loadImage( canvas.toDataURL(), deferred );
+							upload.URL().revokeObjectURL( video.url );
 						}, 500 );
 					}
 				} );
-				const url = this.URL().createObjectURL( this.file );
+				url = this.URL().createObjectURL( this.file );
 				video.src = url;
 				// If we can't get a frame within 10 seconds, something is probably seriously wrong.
 				// This can happen for broken files where we can't actually seek to the time we wanted.
-				setTimeout( () => {
+				setTimeout( function () {
 					deferred.reject();
-					this.URL().revokeObjectURL( video.url );
+					upload.URL().revokeObjectURL( video.url );
 				}, 10000 );
 			} else {
-				const dataUrlReader = new FileReader();
-				dataUrlReader.onload = () => {
+				dataUrlReader = new FileReader();
+				dataUrlReader.onload = function () {
 					// this step (inserting image-as-dataurl into image object) is slow for large images, which
 					// is why this is optional and has a control attached to it to load the preview.
-					this.loadImage( dataUrlReader.result, deferred );
+					upload.loadImage( dataUrlReader.result, deferred );
 				};
 				dataUrlReader.readAsDataURL( this.file );
 			}
@@ -867,7 +880,7 @@
 	 * @param {jQuery.Deferred} deferred
 	 */
 	mw.UploadWizardUpload.prototype.loadImage = function ( url, deferred ) {
-		const image = document.createElement( 'img' );
+		var image = document.createElement( 'img' );
 		image.onload = function () {
 			deferred.resolve( image );
 		};

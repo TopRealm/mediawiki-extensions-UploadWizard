@@ -1,8 +1,5 @@
 ( function () {
 
-	/**
-	 * @class
-	 */
 	mw.DestinationChecker = {
 
 		api: new mw.Api(),
@@ -25,11 +22,13 @@
 			return $.when(
 				this.checkUnique( title ),
 				this.checkBlacklist( title )
-			).then( ( unique, blacklist ) => ( {
-				unique: unique,
-				blacklist: blacklist,
-				title: title
-			} ) );
+			).then( function ( unique, blacklist ) {
+				return {
+					unique: unique,
+					blacklist: blacklist,
+					title: title
+				};
+			} );
 		},
 
 		/**
@@ -44,6 +43,8 @@
 		 * @return {string} [return.done.blacklistLine] See mw.Api#isBlacklisted
 		 */
 		checkBlacklist: function ( title ) {
+			var checker = this;
+
 			/**
 			 * Process result of a TitleBlacklist API call.
 			 *
@@ -51,8 +52,8 @@
 			 * @param {Object|boolean} blacklistResult `false` if not blacklisted, object if blacklisted
 			 * @return {Object}
 			 */
-			const blacklistResultProcessor = ( blacklistResult ) => {
-				let result;
+			function blacklistResultProcessor( blacklistResult ) {
+				var result;
 
 				if ( blacklistResult === false ) {
 					result = { notBlacklisted: true };
@@ -65,16 +66,20 @@
 					};
 				}
 
-				this.cachedBlacklist[ title ] = result;
+				checker.cachedBlacklist[ title ] = result;
 				return result;
-			};
+			}
 
 			if ( this.cachedBlacklist[ title ] !== undefined ) {
 				return $.Deferred().resolve( this.cachedBlacklist[ title ] );
 			}
 
-			// it's not blacklisted, because the API isn't even available
-			return mw.loader.using( 'mediawiki.api.titleblacklist' ).then( () => this.api.isBlacklisted( title ).then( blacklistResultProcessor ), () => $.Deferred().resolve( { notBlacklisted: true, unavailable: true } ) );
+			return mw.loader.using( 'mediawiki.api.titleblacklist' ).then( function () {
+				return checker.api.isBlacklisted( title ).then( blacklistResultProcessor );
+			}, function () {
+				// it's not blacklisted, because the API isn't even available
+				return $.Deferred().resolve( { notBlacklisted: true, unavailable: true } );
+			} );
 		},
 
 		/**
@@ -90,12 +95,14 @@
 		 * @return {string} [return.done.href] URL to file description page
 		 */
 		checkUnique: function ( title ) {
-			const NS_FILE = mw.config.get( 'wgNamespaceIds' ).file;
+			var checker = this,
+				NS_FILE = mw.config.get( 'wgNamespaceIds' ).file,
+				titleObj, prefix, ext;
 
-			const titleObj = mw.Title.newFromText( title );
-			const ext = mw.Title.normalizeExtension( titleObj.getExtension() || '' );
+			titleObj = mw.Title.newFromText( title );
+			ext = mw.Title.normalizeExtension( titleObj.getExtension() || '' );
 			// Strip namespace and file extension
-			const prefix = titleObj.getNameText();
+			prefix = titleObj.getNameText();
 
 			/**
 			 * Process result of a an imageinfo API call.
@@ -104,8 +111,8 @@
 			 * @param {Object} data API result
 			 * @return {Object}
 			 */
-			const checkUniqueProcessor = ( data ) => {
-				let result, protection, pageId, ntitle, ntitleObj, img;
+			function checkUniqueProcessor( data ) {
+				var result, protection, pageId, ntitle, ntitleObj, img;
 
 				result = { isUnique: true };
 
@@ -117,8 +124,8 @@
 					if ( data.query.pages[ -1 ] && !data.query.pages[ -1 ].imageinfo ) {
 						protection = data.query.pages[ -1 ].protection;
 						if ( protection && protection.length > 0 ) {
-							protection.forEach( ( val ) => {
-								if ( !mw.config.get( 'wgUserGroups' ).includes( val.level ) ) {
+							protection.forEach( function ( val ) {
+								if ( mw.config.get( 'wgUserGroups' ).indexOf( val.level ) === -1 ) {
 									result = {
 										isUnique: true,
 										isProtected: true
@@ -175,7 +182,7 @@
 				}
 
 				return result;
-			};
+			}
 
 			if ( this.cachedResult[ title ] !== undefined ) {
 				return $.Deferred().resolve( this.cachedResult[ title ] );
@@ -204,8 +211,8 @@
 					iiprop: 'url|mime|size',
 					iiurlwidth: 150
 				} ).then( checkUniqueProcessor )
-			).then( ( exact, fuzzy ) => {
-				let result;
+			).then( function ( exact, fuzzy ) {
+				var result;
 				if ( !exact.isUnique || exact.isProtected ) {
 					result = exact;
 				} else if ( !fuzzy.isUnique || fuzzy.isProtected ) {
@@ -214,7 +221,7 @@
 					result = { isUnique: true };
 				}
 
-				this.cachedResult[ title ] = result;
+				checker.cachedResult[ title ] = result;
 				return result;
 			} );
 		},

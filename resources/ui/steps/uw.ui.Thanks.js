@@ -19,11 +19,16 @@
 	/**
 	 * Represents the UI for the wizard's Thanks step.
 	 *
-	 * @class
+	 * @class uw.ui.Thanks
 	 * @extends uw.ui.Step
+	 * @constructor
 	 * @param {Object} config
 	 */
 	uw.ui.Thanks = function UWUIThanks( config ) {
+		var $header,
+			beginButtonTarget,
+			thanks = this;
+
 		this.config = config;
 
 		uw.ui.Step.call(
@@ -39,46 +44,24 @@
 			this.getDelayNotice().prependTo( this.$div );
 		}
 
-		const thanksMessage = new OO.ui.MessageWidget( {
-			type: 'success',
-			label: ( this.config.display && this.config.display.thanksLabel ) ?
-				new OO.ui.HtmlSnippet( this.config.display.thanksLabel ) :
-				mw.msg( 'mwe-upwiz-thanks-message' ),
-			classes: [ 'mwe-upwiz-thanks-message' ]
-		} );
-		thanksMessage.$element.prependTo( this.$div );
+		$( '<p>' )
+			.addClass( 'mwe-upwiz-thanks-explain' )
+			.msg( 'mwe-upwiz-thanks-explain' )
+			.prependTo( this.$div );
 
-		const homeButtonTarget = this.getButtonConfig( 'homeButton', 'target' );
-		let homeButtonHref;
-		if ( !homeButtonTarget ) {
-			homeButtonHref = mw.config.get( 'wgArticlePath' ).replace( '$1', '' );
-		} else if ( homeButtonTarget === 'useObjref' ) {
-			homeButtonHref = homeButtonTarget;
+		$header = $( '<h3>' )
+			.addClass( 'mwe-upwiz-thanks-header' )
+			.prependTo( this.$div );
+
+		if ( !this.config.display || !this.config.display.thanksLabel ) {
+			$header.text( mw.message( 'mwe-upwiz-thanks-intro' ).text() );
 		} else {
-			try {
-				const homeButtonUrl = new URL( homeButtonTarget );
-				// URL parsing went fine: check the protocol.
-				// If `homeButtonTarget` is a wiki page in a non-main namespace,
-				// it will still be parsed into a URL with protocol == namespace.
-				if ( homeButtonUrl.protocol.startsWith( 'http' ) ) {
-					// HTTP URL: as is
-					homeButtonHref = homeButtonUrl.href;
-				} else {
-					// Page title in a non-main namespace
-					homeButtonHref = mw.config
-						.get( 'wgArticlePath' )
-						.replace( '$1', homeButtonTarget );
-				}
-			} catch ( error ) {
-				// Not a URL: assume a page title
-				homeButtonHref = mw.config
-					.get( 'wgArticlePath' )
-					.replace( '$1', homeButtonTarget );
-			}
+			$header.html( this.config.display.thanksLabel );
 		}
+
 		this.homeButton = new OO.ui.ButtonWidget( {
 			label: this.getButtonConfig( 'homeButton', 'label' ) || mw.message( 'mwe-upwiz-home' ).text(),
-			href: homeButtonHref
+			href: this.getButtonConfig( 'homeButton', 'target' ) || mw.config.get( 'wgArticlePath' ).replace( '$1', '' )
 		} );
 
 		this.beginButton = new OO.ui.ButtonWidget( {
@@ -87,10 +70,10 @@
 		} );
 
 		// TODO: make the step order configurable by campaign definitions instead of using these hacks
-		let beginButtonTarget = this.getButtonConfig( 'beginButton', 'target' );
+		beginButtonTarget = this.getButtonConfig( 'beginButton', 'target' );
 		if ( !beginButtonTarget || ( beginButtonTarget === 'dropObjref' && !this.isObjectReferenceGiven() ) ) {
-			this.beginButton.on( 'click', () => {
-				this.emit( 'next-step' );
+			this.beginButton.on( 'click', function () {
+				thanks.emit( 'next-step' );
 			} );
 		} else {
 			if ( beginButtonTarget === 'dropObjref' ) {
@@ -98,7 +81,7 @@
 			}
 			this.beginButton.setHref( beginButtonTarget );
 		}
-		this.beginButton.on( 'click', () => {
+		this.beginButton.on( 'click', function () {
 			mw.DestinationChecker.clearCache();
 		} );
 
@@ -117,24 +100,26 @@
 	 * @param {mw.UploadWizardUpload} upload
 	 */
 	uw.ui.Thanks.prototype.addUpload = function ( upload ) {
-		const thumbWikiText = '[[' + [
+		var thumbWikiText, $thanksDiv, $thumbnailWrapDiv, $thumbnailDiv, $thumbnailCaption, $thumbnailLink;
+
+		thumbWikiText = '[[' + [
 			upload.details.getTitle().getPrefixedText(),
 			'thumb',
 			upload.details.getThumbnailCaption()
 		].join( '|' ) + ']]';
 
-		const $thanksDiv = $( '<div>' )
+		$thanksDiv = $( '<div>' )
 			.addClass( 'mwe-upwiz-thanks ui-helper-clearfix' );
-		const $thumbnailWrapDiv = $( '<div>' )
+		$thumbnailWrapDiv = $( '<div>' )
 			.addClass( 'mwe-upwiz-thumbnail-side' )
 			.appendTo( $thanksDiv );
-		const $thumbnailDiv = $( '<div>' )
+		$thumbnailDiv = $( '<div>' )
 			.addClass( 'mwe-upwiz-thumbnail' )
 			.appendTo( $thumbnailWrapDiv );
-		const $thumbnailCaption = $( '<div>' )
-			.css( { 'text-align': 'left', 'font-size': 'small' } )
+		$thumbnailCaption = $( '<div>' )
+			.css( { 'text-align': 'center', 'font-size': 'small' } )
 			.appendTo( $thumbnailWrapDiv );
-		const $thumbnailLink = $( '<a>' )
+		$thumbnailLink = $( '<a>' )
 			.text( upload.details.getTitle().getMainText() )
 			.appendTo( $thumbnailCaption );
 
@@ -147,7 +132,7 @@
 			);
 
 		// This must match the CSS dimensions of .mwe-upwiz-thumbnail
-		upload.getThumbnail( 200, 200 ).done( ( thumb ) => {
+		upload.getThumbnail( 120, 120 ).done( function ( thumb ) {
 			mw.UploadWizard.placeThumbnail( $thumbnailDiv, thumb );
 		} );
 
@@ -170,7 +155,7 @@
 	 * @return {jQuery}
 	 */
 	uw.ui.Thanks.prototype.makeReadOnlyInput = function ( value, label, useEditFont ) {
-		const copyText = new mw.widgets.CopyTextLayout( {
+		var copyText = new mw.widgets.CopyTextLayout( {
 			align: 'top',
 			label: label,
 			copyText: value
@@ -207,7 +192,7 @@
 	 * @private
 	 */
 	uw.ui.Thanks.prototype.dropParameterFromURL = function ( url, paramName ) {
-		const newUrl = new mw.Uri( url );
+		var newUrl = new mw.Uri( url );
 		if ( newUrl.query ) {
 			delete newUrl.query[ paramName ];
 			delete newUrl.query[ paramName + '[]' ];
@@ -216,7 +201,7 @@
 	};
 
 	uw.ui.Thanks.prototype.getDelayNotice = function () {
-		const $delayNotice = $( '<p>' )
+		var $delayNotice = $( '<p>' )
 			.addClass( 'mwe-upwiz-thanks-update-delay' )
 			.msg( 'mwe-upwiz-objref-notice-update-delay' );
 

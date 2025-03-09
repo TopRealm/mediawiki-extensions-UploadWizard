@@ -1,6 +1,6 @@
 ( function ( uw ) {
 
-	const scaleMsgKeys = [ 'size-bytes', 'size-kilobytes', 'size-megabytes', 'size-gigabytes' ];
+	var scaleMsgKeys = [ 'size-bytes', 'size-kilobytes', 'size-megabytes', 'size-gigabytes' ];
 
 	uw.units = {
 		/**
@@ -13,13 +13,11 @@
 		 * @return {string} formatted size
 		 */
 		bytes: function ( size ) {
-			let i = 0;
+			var i = 0;
 			while ( size >= 1024 && i < scaleMsgKeys.length - 1 ) {
 				size /= 1024.0;
 				i++;
 			}
-			// Messages are documented above (scaleMsgKeys)
-			// eslint-disable-next-line mediawiki/msg-doc
 			return mw.message( scaleMsgKeys[ i ], size.toFixed( i > 1 ? 2 : 0 ) ).text();
 		}
 	};

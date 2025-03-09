@@ -22,9 +22,8 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use MediaWiki\Api\ApiBase;
-use MediaWiki\Api\ApiQuery;
-use MediaWiki\Api\ApiQueryBase;
+use ApiBase;
+use ApiQueryBase;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
@@ -34,7 +33,7 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  * @ingroup API
  */
 class ApiQueryAllCampaigns extends ApiQueryBase {
-	public function __construct( ApiQuery $query, string $moduleName ) {
+	public function __construct( $query, $moduleName ) {
 		parent::__construct( $query, $moduleName, 'uwc' );
 	}
 
@@ -47,7 +46,7 @@ class ApiQueryAllCampaigns extends ApiQueryBase {
 
 		$this->addWhereIf( [ 'campaign_enabled' => 1 ], $params['enabledonly'] );
 		$this->addOption( 'LIMIT', $limit + 1 );
-		$this->addOption( 'ORDER BY', 'campaign_id' );
+		$this->addOption( 'ORDER BY', 'campaign_id' ); // Not sure if required?
 
 		$this->addFields( [
 			'campaign_id',
@@ -57,7 +56,8 @@ class ApiQueryAllCampaigns extends ApiQueryBase {
 
 		if ( $params['continue'] !== null ) {
 			$from_id = (int)$params['continue'];
-			$this->addWhere( $this->getDB()->expr( 'campaign_id', '>=', $from_id ) );
+			// Not SQL Injection, since we already force this to be an integer
+			$this->addWhere( "campaign_id >= $from_id" );
 		}
 
 		$res = $this->select( __METHOD__ );
@@ -108,12 +108,10 @@ class ApiQueryAllCampaigns extends ApiQueryBase {
 		$result->addIndexedTagName( [ 'query', $this->getModuleName() ], 'campaign' );
 	}
 
-	/** @inheritDoc */
 	public function getCacheMode( $params ) {
 		return 'public';
 	}
 
-	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'enabledonly' => false,
@@ -140,7 +138,6 @@ class ApiQueryAllCampaigns extends ApiQueryBase {
 		];
 	}
 
-	/** @inheritDoc */
 	public function getHelpUrls() {
 		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:UploadWizard';
 	}

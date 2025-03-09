@@ -1,9 +1,4 @@
 ( function ( uw ) {
-	/**
-	 * @class
-	 * @extends OO.ui.Dialog
-	 * @inheritdoc
-	 */
 	uw.LicensePreviewDialog = function UWLicensePreviewDialog( config ) {
 		uw.LicensePreviewDialog.super.call( this, config );
 	};
@@ -12,6 +7,8 @@
 	uw.LicensePreviewDialog.static.name = 'licensePreviewDialog';
 
 	uw.LicensePreviewDialog.prototype.initialize = function () {
+		var dialog = this;
+
 		uw.LicensePreviewDialog.super.prototype.initialize.call( this );
 
 		this.content = new OO.ui.PanelLayout( { padded: true, expanded: false } );
@@ -19,20 +16,21 @@
 		this.$spinner = $.createSpinner( { size: 'large', type: 'block' } )
 			.css( { width: 200, padding: 20, float: 'none', margin: '0 auto' } );
 
-		$( document.body ).on( 'click', ( e ) => {
-			if ( !$.contains( this.$body.get( 0 ), e.target ) ) {
-				this.close();
+		$( document.body ).on( 'click', function ( e ) {
+			if ( !$.contains( dialog.$body.get( 0 ), e.target ) ) {
+				dialog.close();
 			}
 		} );
 	};
 
 	uw.LicensePreviewDialog.prototype.addCloseButton = function () {
-		const closeButton = new OO.ui.ButtonWidget( {
-			label: OO.ui.msg( 'ooui-dialog-process-dismiss' )
-		} );
+		var dialog = this,
+			closeButton = new OO.ui.ButtonWidget( {
+				label: OO.ui.msg( 'ooui-dialog-process-dismiss' )
+			} );
 
-		closeButton.on( 'click', () => {
-			this.close();
+		closeButton.on( 'click', function () {
+			dialog.close();
 		} );
 
 		this.content.$element.append( closeButton.$element );

@@ -18,8 +18,7 @@ module.exports = function ( grunt ) {
 		},
 		stylelint: {
 			options: {
-				reportNeedlessDisables: true,
-				cache: true
+				reportNeedlessDisables: true
 			},
 			all: 'resources/{**/,}*.{css,less}'
 		},

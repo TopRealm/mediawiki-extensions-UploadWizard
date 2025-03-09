@@ -2,10 +2,10 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use MediaWiki\Content\TextContent;
-use MediaWiki\Context\IContextSource;
+use IContextSource;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use TextContent;
 
 /**
  * Checks Flickr images against a blacklist of users
@@ -143,7 +143,7 @@ class FlickrBlacklist {
 		];
 		$response = MediaWikiServices::getInstance()->getHttpRequestFactory()
 			->post( $this->flickrApiUrl, $params, __METHOD__ );
-		if ( $response !== null ) {
+		if ( $response !== false ) {
 			$response = json_decode( $response, true );
 		}
 		if ( isset( $response['photo']['owner']['nsid'] ) ) {

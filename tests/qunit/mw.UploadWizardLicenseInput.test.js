@@ -14,32 +14,32 @@ QUnit.module( 'ext.uploadWizardLicenseInput', QUnit.newMwEnvironment( {
 	}
 } ) );
 
-QUnit.test( 'Smoke test', ( assert ) => {
-	const config = { type: 'or', licenses: [] };
-	const $fixture = $( '<div>' );
-	const uwLicenseInput = new mw.UploadWizardLicenseInput( config );
+QUnit.test( 'Smoke test', function ( assert ) {
+	var config = { type: 'or', licenses: [] };
+	var $fixture = $( '<div>' );
+	var uwLicenseInput = new mw.UploadWizardLicenseInput( config );
 	$fixture.append( uwLicenseInput.$element );
 	assert.true( !!uwLicenseInput, 'LicenseInput object created !' );
 } );
 
-QUnit.test( 'createInputs()', ( assert ) => {
-	const config = { type: 'or', licenses: [ 'cc-by-sa-3.0' ] };
-	const $fixture = $( '<div>' );
+QUnit.test( 'createInputs()', function ( assert ) {
+	var config = { type: 'or', licenses: [ 'cc-by-sa-3.0' ] };
+	var $fixture = $( '<div>' );
 
-	const uwLicenseInput = new mw.UploadWizardLicenseInput( config );
+	var uwLicenseInput = new mw.UploadWizardLicenseInput( config );
 	$fixture.append( uwLicenseInput.$element );
 
 	// Check radio button is there
-	const $input = $fixture.find( '.oo-ui-radioInputWidget .oo-ui-inputWidget-input[value="cc-by-sa-3.0"]' );
+	var $input = $fixture.find( '.oo-ui-radioInputWidget .oo-ui-inputWidget-input[value="cc-by-sa-3.0"]' );
 	assert.strictEqual( $input.length, 1, 'Radio button created.' );
 
 	// Check label is there
-	const $label = $input.closest( '.oo-ui-radioOptionWidget' ).find( '.oo-ui-labelElement-label' );
+	var $label = $input.closest( '.oo-ui-radioOptionWidget' ).find( '.oo-ui-labelElement-label' );
 	assert.strictEqual( $label.length, 1, 'Label created.' );
 } );
 
-QUnit.test( 'createGroupedInputs()', ( assert ) => {
-	const config = {
+QUnit.test( 'createGroupedInputs()', function ( assert ) {
+	var config = {
 		type: 'or',
 		defaults: [ 'cc-by-sa-3.0' ],
 		licenseGroups: [
@@ -50,9 +50,9 @@ QUnit.test( 'createGroupedInputs()', ( assert ) => {
 			}
 		]
 	};
-	const $fixture = $( '<div>' );
+	var $fixture = $( '<div>' );
 
-	const uwLicenseInput = new mw.UploadWizardLicenseInput( config );
+	var uwLicenseInput = new mw.UploadWizardLicenseInput( config );
 	uwLicenseInput.setDefaultValues();
 	$fixture.append( uwLicenseInput.$element );
 

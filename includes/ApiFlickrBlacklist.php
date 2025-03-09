@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use MediaWiki\Api\ApiBase;
+use ApiBase;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
@@ -40,7 +40,6 @@ class ApiFlickrBlacklist extends ApiBase {
 		}
 	}
 
-	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'url' => [

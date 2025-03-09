@@ -19,11 +19,12 @@
 	QUnit.module( 'mw.UploadWizardUpload', QUnit.newMwEnvironment() );
 
 	function createUpload( filename ) {
-		const oldconf = mw.UploadWizard.config;
+		var upload,
+			oldconf = mw.UploadWizard.config;
 
 		mw.UploadWizard.config = {};
 
-		const upload = new mw.UploadWizardUpload( {
+		upload = new mw.UploadWizardUpload( {
 			api: {
 				defaults: {
 					ajax: {}
@@ -38,14 +39,14 @@
 		return upload;
 	}
 
-	QUnit.test( 'constructor sanity test', ( assert ) => {
-		const upload = createUpload();
+	QUnit.test( 'constructor sanity test', function ( assert ) {
+		var upload = createUpload();
 
 		assert.true( !!upload );
 	} );
 
-	QUnit.test( 'getBasename', ( assert ) => {
-		let upload;
+	QUnit.test( 'getBasename', function ( assert ) {
+		var upload;
 
 		upload = createUpload( 'path/to/filename.png' );
 		assert.strictEqual( upload.getBasename(), 'filename.png', 'Path is stripped' );

@@ -11,19 +11,16 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use MediaWiki\Content\JsonContent;
+use FormatJson;
+use JsonContent;
+use JsonSchemaException;
 use MediaWiki\Extension\EventLogging\EventLogging;
-use MediaWiki\Extension\EventLogging\Libs\JsonSchemaValidation\JsonSchemaException;
-use MediaWiki\Json\FormatJson;
 
 /**
  * Represents the configuration of an Upload Campaign
  */
 class CampaignContent extends JsonContent {
 
-	/**
-	 * @param string $text
-	 */
 	public function __construct( $text ) {
 		parent::__construct( $text, 'Campaign' );
 	}

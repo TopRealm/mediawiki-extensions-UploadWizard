@@ -5,7 +5,7 @@
 	 *
 	 * @extends OO.ui.FieldLayout
 	 *
-	 * @class
+	 * @constructor
 	 * @inheritdoc
 	 * @param {OO.ui.Widget} fieldWidget
 	 * @param {Object} [config]
@@ -16,8 +16,8 @@
 		// FieldLayout will add an icon which, when clicked, reveals more information
 		// about the input. We'll want to display that by default, so we're getting
 		// rid of the "help" property here & will later append that after the header
-		const help = config && config.help ? config.help : '';
-		config = Object.assign( { align: 'top', required: false }, config, { help: '' } );
+		var help = config && config.help ? config.help : '';
+		config = $.extend( { align: 'top', required: false }, config, { help: '' } );
 
 		uw.FieldLayout.super.call( this, fieldWidget, config );
 		uw.ValidationMessageElement.call( this, { validatedWidget: fieldWidget } );
@@ -52,7 +52,7 @@
 		// only add 'optional' marker after the label if that label
 		// has content...
 		if ( !this.required && this.$label.text() !== '' ) {
-			this.$header.append( ' ', this.optionalMarker.$element );
+			this.$header.after( this.optionalMarker.$element );
 		} else {
 			this.optionalMarker.$element.remove();
 		}

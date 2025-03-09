@@ -19,7 +19,7 @@
 	QUnit.module( 'mw.fileApi', QUnit.newMwEnvironment() );
 
 	QUnit.test( 'isPreviewableFile', function ( assert ) {
-		const testFile = {};
+		var testFile = {};
 
 		testFile.type = 'image/png';
 		testFile.size = 5 * 1024 * 1024;
@@ -43,13 +43,13 @@
 	} );
 
 	QUnit.test( 'isPreviewableVideo', function ( assert ) {
-		const testFile = {},
+		var result, testFile = {},
 			fakeVideo = {
 				canPlayType: this.sandbox.stub().returns( 'yes' )
 			};
 
 		this.sandbox.stub( document, 'createElement' ).returns( fakeVideo );
-		let result = mw.fileApi.isPreviewableVideo( testFile );
+		result = mw.fileApi.isPreviewableVideo( testFile );
 		document.createElement.restore();
 
 		assert.strictEqual( result, true );

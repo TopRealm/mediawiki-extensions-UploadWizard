@@ -4,7 +4,6 @@ namespace MediaWiki\Extension\UploadWizard\Tests;
 
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Extension\UploadWizard\Specials\SpecialUploadWizard;
-use MediaWiki\MainConfigNames;
 use SpecialPageTestBase;
 use UserBlockedError;
 
@@ -28,9 +27,9 @@ class SpecialUploadWizardTest extends SpecialPageTestBase {
 	 * @param bool $expectException A UserBlockedError is expected
 	 */
 	public function testIsUserUploadAllowedForBlockedUser( $sitewide, $expectException ) {
-		$this->overrideConfigValues( [
-			MainConfigNames::BlockDisablesLogin => false,
-			MainConfigNames::EnableUploads => true,
+		$this->setMwGlobals( [
+			'wgBlockDisablesLogin' => false,
+			'wgEnableUploads' => true,
 		] );
 
 		$user = $this->getTestUser()->getUser();
@@ -40,11 +39,7 @@ class SpecialUploadWizardTest extends SpecialPageTestBase {
 		] );
 		$block->setTarget( $user );
 		$block->setBlocker( $this->getTestSysop()->getUser() );
-
-		$this->getServiceContainer()
-			->getDatabaseBlockStoreFactory()
-			->getDatabaseBlockStore( $block->getWikiId() )
-			->insertBlock( $block );
+		$block->insert();
 
 		$caughtException = false;
 		try {
@@ -52,6 +47,8 @@ class SpecialUploadWizardTest extends SpecialPageTestBase {
 		} catch ( UserBlockedError $e ) {
 			$caughtException = true;
 		}
+
+		$block->delete();
 
 		$this->assertSame( $expectException, $caughtException );
 	}

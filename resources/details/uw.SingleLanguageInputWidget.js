@@ -4,22 +4,22 @@
 	 * A single language input field in UploadWizard's "Details" step form.
 	 *
 	 * @extends uw.DetailsWidget
-	 * @class
+	 * @constructor
 	 * @param {Object} config
 	 * @param {Object} config.languages { langcode: text } map of languages
 	 * @param {Object} [config.defaultLanguage]
-	 * @param {boolean} [config.removable=true]
+	 * @param {boolean} [config.canBeRemoved=true]
 	 * @param {mw.Message} [config.remove] Title text for remove icon
 	 * @param {number} [config.minLength=0] Minimum input length
 	 * @param {number} [config.maxLength=99999] Maximum input length
 	 */
 	uw.SingleLanguageInputWidget = function UWSingleLanguageInputWidget( config ) {
-		this.config = Object.assign( {
+		this.config = $.extend( {
 			inputWidgetConstructor: OO.ui.MultilineTextInputWidget.bind( null, {
 				classes: [ 'mwe-upwiz-singleLanguageInputWidget-text' ],
-				autosize: true
+				autosize: true,
+				rows: 2
 			} ),
-			removable: true,
 			remove: mw.message( '' ),
 			minLength: 0,
 			maxLength: 99999
@@ -39,6 +39,7 @@
 				classes: [ 'mwe-upwiz-singleLanguageInputWidget-language' ]
 			} );
 		}
+		this.languageSelector.setValue( config.defaultLanguage || this.getDefaultLanguage() );
 
 		// eslint-disable-next-line new-cap
 		this.textInput = new this.config.inputWidgetConstructor();
@@ -46,6 +47,7 @@
 			classes: [ 'mwe-upwiz-singleLanguageInputWidget-removeItem' ],
 			icon: 'trash',
 			framed: false,
+			flags: [ 'destructive' ],
 			title: this.config.remove.exists() ? this.config.remove.text() : ''
 		} );
 
@@ -53,27 +55,24 @@
 			click: 'onRemoveClick'
 		} );
 
-		this.setLanguage( config.defaultLanguage || this.getDefaultLanguage() );
-		this.languageSelector.on( 'select', () => {
-			this.textInput.$input.attr( 'lang', this.languageSelector.getValue() );
-		} );
 		this.languageSelector.connect( this, { select: [ 'emit', 'select' ] } );
 		// Aggregate 'change' event
 		// (but do not flash warnings in the user's face while they're typing)
 		this.textInput.on( 'change', OO.ui.debounce( this.emit.bind( this, 'change' ), 500 ) );
 
-		// Note: ValidationMessageElement will append messages after this.$body
-		this.$body = $( '<div>' ).addClass( 'mwe-upwiz-singleLanguageInputWidget-body' ).append(
-			this.languageSelector.getElement(),
-			// remove button will be hidden with CSS if it's not meant to be removable
-			this.removeButton.$element,
-			this.textInput.$element
-		);
-		this.$element.addClass( 'mwe-upwiz-singleLanguageInputWidget' ).append( this.$body );
-		this.setRemovable( this.config.removable );
+		this.$element.addClass( 'mwe-upwiz-singleLanguageInputWidget' );
+		this.$element.append( this.languageSelector.getElement() );
+		// HACK: ValidationMessageElement will append messages after this.$body
+		this.$body = this.textInput.$element;
+		if ( this.config.canBeRemoved !== false ) {
+			this.$element.append( this.removeButton.$element );
+			this.$body = this.removeButton.$element; // HACK
+		}
+		this.$element.append( this.textInput.$element );
+
 	};
 	OO.inheritClass( uw.SingleLanguageInputWidget, uw.DetailsWidget );
-	OO.mixinClass( uw.SingleLanguageInputWidget, uw.ValidatableElement );
+	OO.mixinClass( uw.SingleLanguageInputWidget, uw.ValidationMessageElement );
 
 	/**
 	 * Handle remove button click events.
@@ -81,7 +80,7 @@
 	 * @private
 	 */
 	uw.SingleLanguageInputWidget.prototype.onRemoveClick = function () {
-		const element = this.getElementGroup();
+		var element = this.getElementGroup();
 
 		if ( element && typeof element.removeItems === 'function' ) {
 			element.removeItems( [ this ] );
@@ -107,7 +106,7 @@
 			return code;
 		}
 		if ( code.lastIndexOf( '-' ) !== -1 ) {
-			return this.getClosestAllowedLanguage( code.slice( 0, code.lastIndexOf( '-' ) ), fallback );
+			return this.getClosestAllowedLanguage( code.slice( 0, code.lastIndexOf( '-' ) ) );
 		}
 		return arguments.length > 1 ? fallback : this.getDefaultLanguage();
 	};
@@ -120,14 +119,21 @@
 	 * @return {string}
 	 */
 	uw.SingleLanguageInputWidget.prototype.getDefaultLanguage = function () {
+		var defaultLanguage;
+
 		if ( this.defaultLanguage !== undefined ) {
 			return this.defaultLanguage;
 		}
 
-		let defaultLanguage = this.getClosestAllowedLanguage( mw.config.get( 'wgUserLanguage' ), null ) ||
-			this.getClosestAllowedLanguage( mw.config.get( 'wgContentLanguage' ), null ) ||
-			this.getClosestAllowedLanguage( 'en', null ) ||
-			Object.keys( this.config.languages )[ 0 ];
+		if ( this.getClosestAllowedLanguage( mw.config.get( 'wgUserLanguage' ), null ) ) {
+			defaultLanguage = this.getClosestAllowedLanguage( mw.config.get( 'wgUserLanguage' ) );
+		} else if ( this.getClosestAllowedLanguage( mw.config.get( 'wgContentLanguage' ), null ) ) {
+			defaultLanguage = this.getClosestAllowedLanguage( mw.config.get( 'wgContentLanguage' ) );
+		} else if ( this.getClosestAllowedLanguage( 'en', null ) ) {
+			defaultLanguage = this.getClosestAllowedLanguage( 'en' );
+		} else {
+			defaultLanguage = Object.keys( this.config.languages )[ 0 ];
+		}
 
 		// Logic copied from MediaWiki:UploadForm.js
 		// Per request from Portuguese and Brazilian users, treat Brazilian Portuguese as Portuguese.
@@ -145,20 +151,20 @@
 	/**
 	 * @inheritdoc
 	 */
-	// eslint-disable-next-line no-unused-vars
-	uw.SingleLanguageInputWidget.prototype.validate = function ( thorough ) {
-		const status = new mw.uploadWizard.ValidationStatus(),
+	uw.SingleLanguageInputWidget.prototype.getErrors = function () {
+		var
+			errors = [],
 			text = this.textInput.getValue().trim();
 
 		if ( text.length !== 0 && text.length < this.config.minLength ) {
 			// Empty input is allowed
-			status.addError( mw.message( 'mwe-upwiz-error-too-short', this.config.minLength ) );
+			errors.push( mw.message( 'mwe-upwiz-error-too-short', this.config.minLength ) );
 		}
 		if ( text.length > this.config.maxLength ) {
-			status.addError( mw.message( 'mwe-upwiz-error-too-long', this.config.maxLength ) );
+			errors.push( mw.message( 'mwe-upwiz-error-too-long', this.config.maxLength ) );
 		}
 
-		return status.getErrors().length === 0 ? status.resolve() : status.reject();
+		return $.Deferred().resolve( errors ).promise();
 	};
 
 	/**
@@ -180,8 +186,6 @@
 	 */
 	uw.SingleLanguageInputWidget.prototype.setLanguage = function ( value ) {
 		this.languageSelector.setValue( value );
-		this.textInput.$input.attr( 'lang', value );
-		this.textInput.$input.attr( 'spellcheck', '' );
 	};
 
 	/**
@@ -202,8 +206,9 @@
 	 * @inheritdoc
 	 */
 	uw.SingleLanguageInputWidget.prototype.getWikiText = function () {
-		let language = this.getLanguage();
-		const text = this.getText();
+		var
+			language = this.getLanguage(),
+			text = this.getText();
 
 		if ( !text ) {
 			return '';
@@ -223,8 +228,7 @@
 	uw.SingleLanguageInputWidget.prototype.getSerialized = function () {
 		return {
 			language: this.languageSelector.getValue(),
-			text: this.textInput.getValue(),
-			removable: this.config.removable
+			text: this.textInput.getValue()
 		};
 	};
 
@@ -233,20 +237,10 @@
 	 * @param {Object} serialized
 	 * @param {string} serialized.language Language code
 	 * @param {string} serialized.text Text
-	 * @param {boolean} serialized.removable
 	 */
 	uw.SingleLanguageInputWidget.prototype.setSerialized = function ( serialized ) {
 		this.setLanguage( serialized.language );
 		this.setText( serialized.text );
-		this.setRemovable( serialized.removable );
-	};
-
-	/**
-	 * @param {boolean} removable
-	 */
-	uw.SingleLanguageInputWidget.prototype.setRemovable = function ( removable ) {
-		this.config.removable = !!removable;
-		this.$element.toggleClass( 'mwe-upwiz-singleLanguageInputWidget-removable', this.config.removable );
 	};
 
 }( mw.uploadWizard ) );

@@ -19,13 +19,14 @@
 	/**
 	 * Represents a generic deed.
 	 *
-	 * @class
+	 * @class uw.deed.Abstract
+	 * @constructor
 	 * @param {string} name The name of this step
 	 * @param {Object} config The UW config
 	 * @param {mw.UploadWizardUpload[]} uploads Array of uploads that this deed refers to
 	 */
 	uw.deed.Abstract = function UWDeedInterface( name, config, uploads ) {
-		let tcName, details, field, input;
+		var tcName, details, field, input;
 		this.name = name;
 		this.config = config;
 		uw.deed.Abstract.prototype.instanceCount++;
@@ -39,12 +40,9 @@
 					name: tcName,
 					value: details.template
 				} );
-				input.on( 'change', () => this.emit( 'change' ) );
-				uw.ValidatableElement.decorate( input );
 				field = new uw.FieldLayout(
 					input,
 					{
-						classes: [ 'mwe-upwiz-details-templateoption' ],
 						label: mw.message(
 							details.label,
 							uploads.length,
@@ -60,10 +58,7 @@
 				};
 			}
 		}
-
-		OO.EventEmitter.call( this );
 	};
-	OO.mixinClass( uw.deed.Abstract, OO.EventEmitter );
 
 	/**
 	 * @type {number}
@@ -121,8 +116,8 @@
 	 * @return {Object}
 	 */
 	uw.deed.Abstract.prototype.getSerialized = function () {
-		const selectedTemplateOptions = [];
-		for ( const name in this.templateOptions ) {
+		var name, selectedTemplateOptions = [];
+		for ( name in this.templateOptions ) {
 			if ( this.templateOptions[ name ].input.isSelected() ) {
 				selectedTemplateOptions.push( name );
 			}
@@ -137,11 +132,12 @@
 	 * @param {Object} serialized
 	 */
 	uw.deed.Abstract.prototype.setSerialized = function ( serialized ) {
+		var self = this;
 		if ( serialized.name ) {
 			this.name = serialized.name;
 		}
-		serialized.selectedTemplateOptions.forEach( ( name ) => {
-			this.templateOptions[ name ].input.setSelected( true );
+		serialized.selectedTemplateOptions.forEach( function ( name ) {
+			self.templateOptions[ name ].input.setSelected( true );
 		} );
 	};
 
@@ -150,9 +146,9 @@
 	 * @return {boolean}
 	 */
 	uw.deed.Abstract.prototype.needsPatentAgreement = function ( upload ) {
-		const extensions = this.config.patents ? this.config.patents.extensions : [];
+		var extensions = this.config.patents ? this.config.patents.extensions : [];
 
-		return extensions.includes( upload.title.getExtension().toLowerCase() );
+		return extensions.indexOf( upload.title.getExtension().toLowerCase() ) !== -1;
 	};
 
 	/**
@@ -160,10 +156,9 @@
 	 * @return {uw.FieldLayout}
 	 */
 	uw.deed.Abstract.prototype.getPatentAgreementField = function ( uploads ) {
-		const field = new OO.ui.HiddenInputWidget();
-		field.on( 'change', () => this.emit( 'change' ) );
-		uw.ValidatableElement.decorate( field );
-		field.validate = this.validatePatentAgreement.bind( this, field, uploads );
+		var field = new OO.ui.HiddenInputWidget();
+		field.getErrors = this.getPatentAgreementErrors.bind( this, field, uploads );
+		field.getWarnings = $.Deferred().resolve( [] ).promise.bind();
 
 		return new uw.FieldLayout( field );
 	};
@@ -173,7 +168,7 @@
 	 * @return {uw.PatentDialog}
 	 */
 	uw.deed.Abstract.prototype.getPatentDialog = function ( uploads ) {
-		const config = { panels: [ 'warranty' ] };
+		var config = { panels: [ 'warranty' ] };
 
 		// Only show filename list when in "details" step & we're showing the dialog for individual files
 		if ( uploads[ 0 ] && uploads[ 0 ].state === 'details' ) {
@@ -187,49 +182,45 @@
 	 * @param {OO.ui.InputWidget} input
 	 * @param {mw.UploadWizardUpload[]} uploads
 	 * @param {boolean} thorough
-	 * @return {jQuery.Promise<uw.ValidationStatus>}
+	 * @return {jQuery.Promise}
 	 */
-	uw.deed.Abstract.prototype.validatePatentAgreement = function ( input, uploads, thorough ) {
-		const status = new uw.ValidationStatus();
+	uw.deed.Abstract.prototype.getPatentAgreementErrors = function ( input, uploads, thorough ) {
+		var deed = this,
+			windowManager, dialog, deferred;
 
 		// We only want to test this on submit
 		if ( !thorough ) {
-			return status.resolve();
+			return $.Deferred().resolve( [] ).promise();
 		}
 
 		if ( this.patentAgreed !== true ) {
-			const deferred = $.Deferred();
-			const windowManager = new OO.ui.WindowManager();
-			const dialog = this.getPatentDialog( uploads );
+			deferred = $.Deferred();
+			windowManager = new OO.ui.WindowManager();
+			dialog = this.getPatentDialog( uploads );
 
 			$( document.body ).append( windowManager.$element );
 			windowManager.addWindows( [ dialog ] );
 			windowManager.openWindow( dialog );
 
-			dialog.on( 'disagree', () => {
-				status.addError( mw.message( 'mwe-upwiz-error-patent-disagree' ) );
-				deferred.reject();
+			dialog.on( 'disagree', function () {
+				deferred.resolve( [ mw.message( 'mwe-upwiz-error-patent-disagree' ) ] );
 			} );
-			dialog.on( 'agree', () => {
-				this.patentAgreed = true;
-				input.emit( 'change' );
-				deferred.resolve();
+			dialog.on( 'agree', function () {
+				deed.patentAgreed = true;
+				deferred.resolve( [] );
 			} );
 
-			return deferred.promise().then(
-				() => status.resolve(),
-				() => status.reject()
-			);
+			return deferred.promise();
 		} else {
-			return status.resolve();
+			return $.Deferred().resolve( [] ).promise();
 		}
 	};
 
 	/**
-	 * @return {string}
+	 * @return string
 	 */
 	uw.deed.Abstract.prototype.getTemplateOptionsWikiText = function () {
-		let name, option, wikitext = '';
+		var name, option, wikitext = '';
 		for ( name in this.templateOptions ) {
 			option = this.templateOptions[ name ].input;
 			if ( option.isSelected() ) {
@@ -238,15 +229,5 @@
 		}
 		return wikitext;
 	};
-
-	/**
-	 * Only implemented for OwnWork
-	 */
-	uw.deed.Abstract.prototype.getAiPromptWikitext = function () {};
-
-	/**
-	 * Only implemented for ThirdParty
-	 */
-	uw.deed.Abstract.prototype.getStructuredDataFromSource = function () {};
 
 }( mw.uploadWizard ) );

@@ -6,6 +6,6 @@
 	],
 	"rules": {
 		"qunit/no-loose-assertions": "warn",
-		"no-jquery/no-done-fail": "warn"
+		"no-var": "off"
 	}
 }

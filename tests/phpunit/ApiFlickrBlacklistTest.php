@@ -2,9 +2,9 @@
 
 namespace MediaWiki\Extension\UploadWizard\Tests;
 
+use ApiTestCase;
 use MediaWiki\Extension\UploadWizard\Config;
 use MediaWiki\Extension\UploadWizard\FlickrBlacklist;
-use MediaWiki\Tests\Api\ApiTestCase;
 use MockHttpTrait;
 use ReflectionClass;
 
@@ -187,8 +187,8 @@ class ApiFlickrBlacklistTest extends ApiTestCase {
 	 */
 	protected function setFlickrBlacklistPage( $page ) {
 		global $wgUploadWizardConfig;
-		$this->overrideConfigValues( [
-			'UploadWizardConfig' => array_merge( $wgUploadWizardConfig, [
+		$this->setMwGlobals( [
+			'wgUploadWizardConfig' => array_merge( $wgUploadWizardConfig, [
 				'flickrBlacklistPage' => $page,
 			] ),
 		] );

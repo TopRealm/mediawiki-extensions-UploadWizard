@@ -3,7 +3,6 @@
 	 * Represents an object which configures an html5 FormData object to upload.
 	 * Large files are uploaded in chunks.
 	 *
-	 * @class
 	 * @param {mw.UploadWizardUpload} upload
 	 * @param {mw.Api} api
 	 */
@@ -19,7 +18,7 @@
 		this.transport = new mw.FormDataTransport(
 			this.api,
 			this.formData
-		).on( 'update-stage', ( stage ) => {
+		).on( 'update-stage', function ( stage ) {
 			upload.ui.setStatus( 'mwe-upwiz-' + stage );
 		} );
 	};
@@ -34,20 +33,22 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.ApiUploadFormDataHandler.prototype.submit = function () {
-		return this.configureEditToken().then( () => {
-			this.beginTime = Date.now();
-			this.upload.ui.setStatus( 'mwe-upwiz-transport-started' );
-			this.upload.ui.showTransportProgress();
+		var handler = this;
 
-			return this.transport.upload( this.upload.file, this.upload.title.getMainText() )
-				.progress( ( fraction ) => {
-					if ( this.upload.state === 'aborted' ) {
-						this.abort();
+		return this.configureEditToken().then( function () {
+			handler.beginTime = Date.now();
+			handler.upload.ui.setStatus( 'mwe-upwiz-transport-started' );
+			handler.upload.ui.showTransportProgress();
+
+			return handler.transport.upload( handler.upload.file, handler.upload.title.getMainText() )
+				.progress( function ( fraction ) {
+					if ( handler.upload.state === 'aborted' ) {
+						handler.abort();
 						return;
 					}
 
 					if ( fraction !== null ) {
-						this.upload.setTransportProgress( fraction );
+						handler.upload.setTransportProgress( fraction );
 					}
 				} );
 		} );
@@ -60,8 +61,10 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.ApiUploadFormDataHandler.prototype.configureEditToken = function () {
-		return this.api.getEditToken().then( ( token ) => {
-			this.formData.token = token;
+		var handler = this;
+
+		return this.api.getEditToken().then( function ( token ) {
+			handler.formData.token = token;
 		} );
 	};
 }() );

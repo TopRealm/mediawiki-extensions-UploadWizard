@@ -4,13 +4,14 @@ namespace MediaWiki\Extension\UploadWizard\Specials;
 
 use BitmapHandler;
 use ChangeTags;
+use DerivativeContext;
 use LogicException;
-use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Extension\UploadWizard\Campaign;
 use MediaWiki\Extension\UploadWizard\Config;
 use MediaWiki\Extension\UploadWizard\Hooks;
 use MediaWiki\Extension\UploadWizard\Tutorial;
 use MediaWiki\Html\Html;
+use MediaWiki\Request\WebRequest;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
@@ -44,8 +45,11 @@ class SpecialUploadWizard extends SpecialPage {
 
 	/**
 	 * @param UserOptionsLookup $userOptionsLookup
+	 * @param WebRequest|null $request the request (usually wgRequest)
+	 * @param string|null $par everything in the URL after Special:UploadWizard.
+	 *   Not sure what we can use it for
 	 */
-	public function __construct( UserOptionsLookup $userOptionsLookup ) {
+	public function __construct( UserOptionsLookup $userOptionsLookup, $request = null, $par = null ) {
 		$this->userOptionsLookup = $userOptionsLookup;
 		parent::__construct( 'UploadWizard', 'upload' );
 	}
@@ -67,7 +71,7 @@ class SpecialUploadWizard extends SpecialPage {
 
 		$req = $this->getRequest();
 
-		$urlArgs = [ 'caption', 'description', 'lat', 'lon', 'alt' ];
+		$urlArgs = [ 'caption', 'description', 'alt' ];
 
 		$urlDefaults = [];
 		foreach ( $urlArgs as $arg ) {
@@ -147,18 +151,20 @@ class SpecialUploadWizard extends SpecialPage {
 	 * @since 1.2
 	 */
 	protected function handleCampaign() {
-		$campaignName = $this->getRequest()->getVal( 'campaign' ) ??
-			Config::getSetting( 'defaultCampaign' );
+		$campaignName = $this->getRequest()->getVal( 'campaign' );
+		if ( $campaignName === null ) {
+			$campaignName = Config::getSetting( 'defaultCampaign' );
+		}
 
 		if ( $campaignName !== null && $campaignName !== '' ) {
 			$campaign = Campaign::newFromName( $campaignName );
 
 			if ( $campaign === false ) {
-				$this->displayError( $this->msg( 'mwe-upwiz-error-nosuchcampaign', $campaignName )->parse() );
+				$this->displayError( $this->msg( 'mwe-upwiz-error-nosuchcampaign', $campaignName )->text() );
 			} elseif ( $campaign->getIsEnabled() ) {
 				$this->campaign = $campaignName;
 			} else {
-				$this->displayError( $this->msg( 'mwe-upwiz-error-campaigndisabled', $campaignName )->parse() );
+				$this->displayError( $this->msg( 'mwe-upwiz-error-campaigndisabled', $campaignName )->text() );
 			}
 		}
 	}

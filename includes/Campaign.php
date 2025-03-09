@@ -3,18 +3,16 @@
 namespace MediaWiki\Extension\UploadWizard;
 
 use InvalidArgumentException;
+use Language;
 use MediaWiki\Category\Category;
-use MediaWiki\Context\IContextSource;
-use MediaWiki\Context\RequestContext;
-use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Parser\Parser;
-use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
-use Wikimedia\ObjectCache\WANObjectCache;
+use Parser;
+use ParserOptions;
+use RequestContext;
+use WANObjectCache;
 use Wikimedia\Rdbms\Database;
-use Wikimedia\Rdbms\SelectQueryBuilder;
 
 /**
  * Class that represents a single upload campaign.
@@ -73,8 +71,9 @@ class Campaign {
 	 * The RequestContext to use for operations performed from this object
 	 *
 	 * @since 1.4
+	 * @var RequestContext|null
 	 */
-	protected IContextSource $context;
+	protected $context = null;
 
 	/** @var WANObjectCache */
 	private $wanObjectCache;
@@ -88,24 +87,15 @@ class Campaign {
 	/** @var \MediaWiki\Interwiki\InterwikiLookup */
 	private $interwikiLookup;
 
-	/**
-	 * @param string $name
-	 * @return Campaign|false
-	 */
 	public static function newFromName( $name ) {
 		$campaignTitle = Title::makeTitleSafe( NS_CAMPAIGN, $name );
-		if ( !$campaignTitle || !$campaignTitle->exists() ) {
+		if ( $campaignTitle === null || !$campaignTitle->exists() ) {
 			return false;
 		}
 
 		return new Campaign( $campaignTitle );
 	}
 
-	/**
-	 * @param Title $title
-	 * @param array|null $config
-	 * @param IContextSource|null $context
-	 */
 	public function __construct( $title, $config = null, $context = null ) {
 		$services = MediaWikiServices::getInstance();
 		$this->wanObjectCache = $services->getMainWANObjectCache();
@@ -124,7 +114,11 @@ class Campaign {
 		} else {
 			$this->config = $config;
 		}
-		$this->context = $context ?? RequestContext::getMain();
+		if ( $context === null ) {
+			$this->context = RequestContext::getMain();
+		} else {
+			$this->context = $context;
+		}
 	}
 
 	/**
@@ -149,16 +143,10 @@ class Campaign {
 		return $this->title->getDBkey();
 	}
 
-	/**
-	 * @return Title
-	 */
 	public function getTitle() {
 		return $this->title;
 	}
 
-	/**
-	 * @return Title|null
-	 */
 	public function getTrackingCategory() {
 		$trackingCats = Config::getSetting( 'trackingCategory' );
 		return Title::makeTitleSafe(
@@ -166,16 +154,10 @@ class Campaign {
 		);
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getUploadedMediaCount() {
 		return Category::newFromTitle( $this->getTrackingCategory() )->getFileCount();
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getTotalContributorsCount() {
 		$dbr = $this->dbr;
 		$fname = __METHOD__;
@@ -186,15 +168,21 @@ class Campaign {
 			function ( $oldValue, &$ttl, array &$setOpts ) use ( $fname, $dbr ) {
 				$setOpts += Database::getCacheSetOptions( $dbr );
 
-				return $dbr->newSelectQueryBuilder()
-					->select( [ 'count' => 'COUNT(DISTINCT img_actor)' ] )
-					->from( 'categorylinks' )
-					->join( 'page', null, 'cl_from=page_id' )
-					->join( 'image', null, 'page_title=img_name' )
-					->where( [ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ] )
-					->caller( $fname )
-					->useIndex( [ 'categorylinks' => 'cl_timestamp' ] )
-					->fetchField();
+				$result = $dbr->select(
+					[ 'categorylinks', 'page', 'image' ],
+					[ 'count' => 'COUNT(DISTINCT img_actor)' ],
+					[ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ],
+					$fname,
+					[
+						'USE INDEX' => [ 'categorylinks' => 'cl_timestamp' ]
+					],
+					[
+						'page' => [ 'INNER JOIN', 'cl_from=page_id' ],
+						'image' => [ 'INNER JOIN', 'page_title=img_name' ]
+					]
+				);
+
+				return $result->current()->count;
 			}
 		);
 	}
@@ -205,16 +193,18 @@ class Campaign {
 	 * @return Title[]
 	 */
 	public function getUploadedMedia( $limit = 24 ) {
-		$result = $this->dbr->newSelectQueryBuilder()
-			->select( [ 'cl_from', 'page_namespace', 'page_title' ] )
-			->from( 'categorylinks' )
-			->join( 'page', null, 'cl_from=page_id' )
-			->where( [ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ] )
-			->orderBy( 'cl_timestamp', SelectQueryBuilder::SORT_DESC )
-			->limit( $limit )
-			->useIndex( [ 'categorylinks' => 'cl_timestamp' ] )
-			->caller( __METHOD__ )
-			->fetchResultSet();
+		$result = $this->dbr->select(
+			[ 'categorylinks', 'page' ],
+			[ 'cl_from', 'page_namespace', 'page_title' ],
+			[ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ],
+			__METHOD__,
+			[
+				'ORDER BY' => 'cl_timestamp DESC',
+				'LIMIT' => $limit,
+				'USE INDEX' => [ 'categorylinks' => 'cl_timestamp' ]
+			],
+			[ 'page' => [ 'INNER JOIN', 'cl_from=page_id' ] ]
+		);
 
 		$images = [];
 		foreach ( $result as $row ) {
@@ -269,13 +259,13 @@ class Campaign {
 		$output = $this->parser->parse(
 			$value, $this->getTitle(), $parserOptions
 		);
-		$processedOutput = $output->runOutputPipeline( $parserOptions, [
+		$parsed = $output->getText( [
 			'enableSectionEditLinks' => false,
 		] );
 
-		$this->updateTemplates( $processedOutput );
+		$this->updateTemplates( $output );
 
-		return Parser::stripOuterParagraph( $processedOutput->getContentHolderText() );
+		return Parser::stripOuterParagraph( $parsed );
 	}
 
 	/**
@@ -319,8 +309,10 @@ class Campaign {
 	 * @param Language|null $lang
 	 * @return array
 	 */
-	public function getParsedConfig( ?Language $lang = null ) {
-		$lang ??= $this->context->getLanguage();
+	public function getParsedConfig( Language $lang = null ) {
+		if ( $lang === null ) {
+			$lang = $this->context->getLanguage();
+		}
 
 		// We check if the parsed config for this campaign is cached. If it is available in cache,
 		// we then check to make sure that it is the latest version - by verifying that its
@@ -474,7 +466,7 @@ class Campaign {
 	 * @return bool
 	 */
 	private function isActive() {
-		$now = time();
+		$today = strtotime( date( "Y-m-d" ) );
 		$start = array_key_exists(
 			'start', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['start'] ) : null;
@@ -482,7 +474,7 @@ class Campaign {
 			'end', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['end'] ) : null;
 
-		return ( $start === null || $start <= $now ) && ( $end === null || $end > $now );
+		return ( $start === null || $start <= $today ) && ( $end === null || $end > $today );
 	}
 
 	/**
@@ -492,12 +484,12 @@ class Campaign {
 	 * @return bool
 	 */
 	private function wasActive() {
-		$now = time();
+		$today = strtotime( date( "Y-m-d" ) );
 		$start = array_key_exists(
 			'start', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['start'] ) : null;
 
-		return ( $start === null || $start <= $now ) && !$this->isActive();
+		return ( $start === null || $start <= $today ) && !$this->isActive();
 	}
 
 	/**

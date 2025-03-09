@@ -3,10 +3,10 @@
 	/**
 	 * A ULS within a description field in UploadWizard's "Details" step form.
 	 *
-	 * @class
+	 * @constructor
 	 * @param {Object} [config]
-	 * @param {Object} [config.languages] Keys are 2-letter language codes, values are language autonyms
-	 * @param {Array} [config.classes] Classes to apply to the ULS container div
+	 * @cfg {Object} [languages] Keys are 2-letter language codes, values are language autonyms
+	 * @cfg {Array} [classes] Classes to apply to the ULS container div
 	 */
 	uw.UlsWidget = function UWUlsWidget( config ) {
 		uw.UlsWidget.super.call( this );
@@ -44,7 +44,7 @@
 	OO.mixinClass( uw.UlsWidget, OO.EventEmitter );
 
 	uw.UlsWidget.prototype.initialiseUls = function ( languages ) {
-		const ulsWidget = this;
+		var ulsWidget = this;
 
 		this.languages = languages;
 
@@ -58,7 +58,7 @@
 			onVisible: function () {
 				// Re-position the ULS *after* the widget has been rendered, so that we can be
 				// sure it's in the right place
-				const offset = ulsWidget.$element.offset();
+				var offset = ulsWidget.$element.offset();
 				if ( this.$menu.css( 'direction' ) === 'rtl' ) {
 					offset.left =
 						offset.left - parseInt( this.$menu.css( 'width' ) ) + ulsWidget.$element.width();
@@ -80,7 +80,7 @@
 	 * @param {string} value
 	 */
 	uw.UlsWidget.prototype.setValue = function ( value ) {
-		const current = this.languageValue;
+		var current = this.languageValue;
 		this.languageValue = value;
 		this.$element.find( '.oo-ui-labelElement-label' ).text( this.languages[ value ] );
 		if ( current !== value ) {

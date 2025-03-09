@@ -2,8 +2,9 @@
 	/**
 	 * Represents a "transport" for files to upload; using HTML5 FormData.
 	 *
-	 * @class
-	 * @mixes OO.EventEmitter
+	 * @constructor
+	 * @class mw.FormDataTransport
+	 * @mixins OO.EventEmitter
 	 * @param {mw.Api} api
 	 * @param {Object} formData Additional form fields required for upload api call
 	 * @param {Object} [config]
@@ -48,7 +49,7 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.FormDataTransport.prototype.post = function ( params ) {
-		const deferred = $.Deferred();
+		var deferred = $.Deferred();
 
 		this.request = this.api.post( params, {
 			/*
@@ -66,9 +67,9 @@
 			 * out how much of the upload has already gone out, so let's add it!
 			 */
 			xhr: function () {
-				const xhr = $.ajaxSettings.xhr();
-				xhr.upload.addEventListener( 'progress', ( evt ) => {
-					let fraction = null;
+				var xhr = $.ajaxSettings.xhr();
+				xhr.upload.addEventListener( 'progress', function ( evt ) {
+					var fraction = null;
 					if ( evt.lengthComputable ) {
 						fraction = parseFloat( evt.loaded / evt.total );
 					}
@@ -92,9 +93,9 @@
 	 * @return {Object}
 	 */
 	mw.FormDataTransport.prototype.createParams = function ( filename, offset ) {
-		const params = OO.cloneObject( this.formData );
+		var params = OO.cloneObject( this.formData );
 
-		Object.assign( params, {
+		$.extend( params, {
 			filename: filename,
 
 			// ignorewarnings is turned on, since warnings are presented in a
@@ -118,7 +119,7 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.FormDataTransport.prototype.upload = function ( file, tempFileName ) {
-		let params, ext;
+		var params, ext;
 
 		this.tempname = tempFileName;
 		// Limit length to 240 bytes (limit hardcoded in UploadBase.php).
@@ -150,31 +151,34 @@
 	 *   promise from #upload
 	 */
 	mw.FormDataTransport.prototype.chunkedUpload = function ( file ) {
-		let prevPromise = $.Deferred().resolve();
-		const deferred = $.Deferred(),
+		var
+			offset,
+			prevPromise = $.Deferred().resolve(),
+			deferred = $.Deferred(),
 			fileSize = file.size,
-			chunkSize = this.chunkSize;
+			chunkSize = this.chunkSize,
+			transport = this;
 
-		for ( let off = 0; off < fileSize; off += chunkSize ) {
+		for ( offset = 0; offset < fileSize; offset += chunkSize ) {
 			// Capture offset in a closure
 			// eslint-disable-next-line no-loop-func
-			( ( offset ) => {
-				const
+			( function ( offset ) {
+				var
 					newPromise = $.Deferred(),
 					isLastChunk = offset + chunkSize >= fileSize,
 					thisChunkSize = isLastChunk ? ( fileSize % chunkSize ) : chunkSize;
-				prevPromise.done( () => {
-					this.uploadChunk( file, offset )
+				prevPromise.done( function () {
+					transport.uploadChunk( file, offset )
 						.done( isLastChunk ? deferred.resolve : newPromise.resolve )
 						.fail( deferred.reject )
-						.progress( ( fraction ) => {
+						.progress( function ( fraction ) {
 							// The progress notifications give us per-chunk progress.
 							// Calculate progress for the whole file.
 							deferred.notify( ( offset + fraction * thisChunkSize ) / fileSize );
 						} );
 				} );
 				prevPromise = newPromise;
-			} )( off );
+			}( offset ) );
 		}
 
 		return deferred.promise();
@@ -188,8 +192,10 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.FormDataTransport.prototype.uploadChunk = function ( file, offset ) {
-		const params = this.createParams( this.tempname, offset ),
-			bytesAvailable = file.size;
+		var params = this.createParams( this.tempname, offset ),
+			transport = this,
+			bytesAvailable = file.size,
+			chunk;
 
 		if ( this.aborted ) {
 			return $.Deferred().reject( 'aborted', {
@@ -202,7 +208,6 @@
 
 		// Slice API was changed and has vendor prefix for now
 		// new version now require start/end and not start/length
-		let chunk;
 		if ( file.mozSlice ) {
 			chunk = file.mozSlice( offset, offset + this.chunkSize, file.type );
 		} else if ( file.webkitSlice ) {
@@ -225,26 +230,26 @@
 		params.filesize = bytesAvailable;
 		params.chunk = chunk;
 
-		return this.post( params ).then( ( response ) => {
+		return this.post( params ).then( function ( response ) {
 			if ( response.upload && response.upload.filekey ) {
-				this.filekey = response.upload.filekey;
+				transport.filekey = response.upload.filekey;
 			}
 
 			if ( response.upload && response.upload.result ) {
 				switch ( response.upload.result ) {
 					case 'Continue':
 						// Reset retry counter
-						this.retries = 0;
+						transport.retries = 0;
 						/* falls through */
 					case 'Success':
 						// Just pass the response through.
 						return response;
 					case 'Poll':
 						// Need to retry with checkStatus.
-						return this.retryWithMethod( 'checkStatus' );
+						return transport.retryWithMethod( 'checkStatus' );
 				}
 			} else {
-				return this.maybeRetry(
+				return transport.maybeRetry(
 					'on unknown response',
 					response.error ? response.error.code : 'unknown-error',
 					response,
@@ -252,21 +257,21 @@
 					file, offset
 				);
 			}
-		}, ( code, result ) => {
+		}, function ( code, result ) {
 			// Ain't this some great machine readable output eh
 			if (
 				result.errors &&
 				result.errors[ 0 ].code === 'stashfailed' &&
 				result.errors[ 0 ].html === mw.message( 'apierror-stashfailed-complete' ).parse()
 			) {
-				return this.retryWithMethod( 'checkStatus' );
+				return transport.retryWithMethod( 'checkStatus' );
 			}
 
 			// Failed to upload, try again in 3 seconds
 			// This is really dumb, we should only do this for cases where retrying has a chance to work
 			// (so basically, network failures). If your upload was blocked by AbuseFilter you're
 			// shafted anyway. But some server-side errors really are temporary...
-			return this.maybeRetry(
+			return transport.maybeRetry(
 				'on error event',
 				code,
 				result,
@@ -319,10 +324,11 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.FormDataTransport.prototype.retryWithMethod = function ( methodName, file, offset ) {
-		const
+		var
+			transport = this,
 			retryDeferred = $.Deferred(),
-			retry = () => {
-				this[ methodName ]( file, offset ).then( retryDeferred.resolve, retryDeferred.reject );
+			retry = function () {
+				transport[ methodName ]( file, offset ).then( retryDeferred.resolve, retryDeferred.reject );
 			};
 
 		if ( this.config.useRetryTimeout !== false ) {
@@ -340,7 +346,8 @@
 	 * @return {jQuery.Promise}
 	 */
 	mw.FormDataTransport.prototype.checkStatus = function () {
-		const params = OO.cloneObject( this.formData );
+		var transport = this,
+			params = OO.cloneObject( this.formData );
 
 		if ( this.aborted ) {
 			return $.Deferred().reject( 'aborted', {
@@ -360,10 +367,10 @@
 		this.request = this.api.post( params );
 
 		return this.request.then(
-			( response ) => {
+			function ( response ) {
 				if ( response.upload && response.upload.result === 'Poll' ) {
 					// If concatenation takes longer than 10 minutes give up
-					if ( ( Date.now() - this.firstPoll ) > 10 * 60 * 1000 ) {
+					if ( ( Date.now() - transport.firstPoll ) > 10 * 60 * 1000 ) {
 						return $.Deferred().reject( 'server-error', { errors: [ {
 							code: 'server-error',
 							html: mw.message( 'api-clientside-error-timeout' ).parse()
@@ -380,15 +387,17 @@
 							// * queued
 							// * publish
 							// * assembling
-							this.emit( 'update-stage', response.upload.stage );
-							return this.retryWithMethod( 'checkStatus' );
+							transport.emit( 'update-stage', response.upload.stage );
+							return transport.retryWithMethod( 'checkStatus' );
 						}
 					}
 				}
 
 				return response;
 			},
-			( code, result ) => $.Deferred().reject( code, result )
+			function ( code, result ) {
+				return $.Deferred().reject( code, result );
+			}
 		);
 	};
 }() );

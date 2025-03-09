@@ -2,11 +2,14 @@
 	/**
 	 * Create an interface fragment corresponding to a file input, suitable for Upload Wizard.
 	 *
-	 * @class
-	 * @mixes OO.EventEmitter
+	 * @class mw.UploadWizardUploadInterface
+	 * @mixins OO.EventEmitter
+	 * @constructor
 	 * @param {mw.UploadWizardUpload} upload
 	 */
 	mw.UploadWizardUploadInterface = function MWUploadWizardUploadInterface( upload ) {
+		var ui = this;
+
 		OO.EventEmitter.call( this );
 
 		this.upload = upload;
@@ -46,8 +49,8 @@
 			flags: 'destructive',
 			icon: 'trash',
 			framed: false
-		} ).on( 'click', () => {
-			this.emit( 'upload-removed' );
+		} ).on( 'click', function () {
+			ui.emit( 'upload-removed' );
 		} );
 
 		if ( mw.UploadWizard.config.defaults && mw.UploadWizard.config.defaults.objref !== '' ) {
@@ -71,8 +74,8 @@
 		// this.progressBar = ( no progress bar for individual uploads yet )
 		// we bind to the ui div since .off() doesn't work for non-DOM objects
 		// TODO Convert this to an OO.EventEmitter, and use OOjs events
-		this.$div.on( 'transportProgressEvent', () => {
-			this.showTransportProgress();
+		this.$div.on( 'transportProgressEvent', function () {
+			ui.showTransportProgress();
 		} );
 	};
 
@@ -85,7 +88,7 @@
 	 *  Omit to hide the indicator
 	 */
 	mw.UploadWizardUploadInterface.prototype.showIndicator = function ( status ) {
-		const progress = status === 'progress';
+		var progress = status === 'progress';
 		this.$spinner.toggle( progress );
 		this.statusMessage.toggle( status && !progress ).setType( status );
 		this.$indicator.toggleClass( 'mwe-upwiz-file-indicator-visible', !!status );
@@ -106,7 +109,7 @@
 	 */
 	mw.UploadWizardUploadInterface.prototype.setStatus = function ( msgKey, args ) {
 		// get the status line for our upload
-		const $status = this.$div.find( '.mwe-upwiz-file-status' );
+		var $status = this.$div.find( '.mwe-upwiz-file-status' );
 		$status.msg( msgKey, args || [] ).show();
 	};
 
@@ -185,7 +188,7 @@
 	 * @param {File} file
 	 */
 	mw.UploadWizardUploadInterface.prototype.fileChangedOk = function ( imageinfo, file ) {
-		const statusItems = [];
+		var statusItems = [];
 
 		this.updateFilename();
 
@@ -209,10 +212,10 @@
 	 *     fails
 	 */
 	mw.UploadWizardUploadInterface.prototype.showThumbnail = function () {
-		const $preview = this.$div.find( '.mwe-upwiz-file-preview' ),
+		var $preview = this.$div.find( '.mwe-upwiz-file-preview' ),
 			deferred = $.Deferred();
 		// This must match the CSS dimensions of .mwe-upwiz-file-preview
-		this.upload.getThumbnail( 120, 120 ).done( ( thumb ) => {
+		this.upload.getThumbnail( 120, 120 ).done( function ( thumb ) {
 			mw.UploadWizard.placeThumbnail( $preview, thumb );
 			deferred.resolve();
 		} );
@@ -228,7 +231,7 @@
 	 *       TODO silently fix to have unique filename? unnecessary at this point...
 	 */
 	mw.UploadWizardUploadInterface.prototype.updateFilename = function () {
-		const path = this.upload.getFilename();
+		var path = this.upload.getFilename();
 
 		// visible filename
 		this.$form.find( '.mwe-upwiz-visible-file-filename-text' )
@@ -248,7 +251,7 @@
 	 * @return {jQuery} A `div` containing a checkbox, label, and optional notice
 	 */
 	mw.UploadWizardUploadInterface.prototype.createImagePickerField = function ( index, setDisabled ) {
-		const $fieldContainer = $( '<div>' ).addClass( 'mwe-upwiz-objref-pick-image' ),
+		var $fieldContainer = $( '<div>' ).addClass( 'mwe-upwiz-objref-pick-image' ),
 			attributes = {
 				type: 'checkbox',
 				class: 'imgPicker',

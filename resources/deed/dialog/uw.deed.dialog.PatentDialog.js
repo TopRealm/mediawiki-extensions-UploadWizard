@@ -20,7 +20,7 @@
 	 * @param {Object} config Dialog config
 	 * @param {Object} uwConfig UploadWizard config
 	 * @param {mw.UploadWizardUpload[]} uploads
-	 * @class
+	 * @constructor
 	 */
 	uw.PatentDialog = function PatentDialog( config, uwConfig, uploads ) {
 		uw.PatentDialog.super.call( this, config );
@@ -51,13 +51,13 @@
 	];
 
 	uw.PatentDialog.prototype.initialize = function () {
-		const filenames = [],
+		var filenames = [],
 			label = new OO.ui.LabelWidget(),
 			panels = new OO.ui.PanelLayout( { padded: true, expanded: false } );
 
 		uw.PatentDialog.super.prototype.initialize.apply( this, arguments );
 
-		this.uploads.forEach( ( upload ) => {
+		this.uploads.forEach( function ( upload ) {
 			filenames.push(
 				// use given title (if available already) or fall back to filename
 				upload.details ? upload.details.getTitle().getMainText() : upload.title.getMainText()
@@ -67,23 +67,23 @@
 		this.content = new OO.ui.PanelLayout( { padded: false, expanded: false } );
 		this.content.$element.addClass( 'mwe-upwiz-patent-rights' );
 
-		if ( this.panels.includes( 'filelist' ) ) {
+		if ( this.panels.indexOf( 'filelist' ) !== -1 ) {
 			label.setLabel( mw.msg( 'mwe-upwiz-patent-dialog-title-filename', mw.language.listToText( filenames ) ) );
 			label.$element.addClass( 'oo-ui-processDialog-title mwe-upwiz-patent-rights-filelist' );
 			this.content.$element.append( label.$element );
 		}
 
-		if ( this.panels.includes( 'warranty' ) ) {
+		if ( this.panels.indexOf( 'warranty' ) !== -1 ) {
 			panels.$element.append( this.getWarrantyLayout().$element );
 		}
 
 		if (
-			this.panels.includes( 'license-ownership' ) ||
-			this.panels.includes( 'license-grant' )
+			this.panels.indexOf( 'license-ownership' ) !== -1 ||
+			this.panels.indexOf( 'license-grant' ) !== -1
 		) {
 			panels.$element.append( this.getLicenseLayout(
-				this.panels.includes( 'license-ownership' ),
-				this.panels.includes( 'license-grant' )
+				this.panels.indexOf( 'license-ownership' ) !== -1,
+				this.panels.indexOf( 'license-grant' ) !== -1
 			).$element );
 		}
 
@@ -99,7 +99,7 @@
 	 * @return {OO.ui.PanelLayout}
 	 */
 	uw.PatentDialog.prototype.getWarrantyLayout = function () {
-		const layout = new OO.ui.PanelLayout( { padded: true, expanded: false } );
+		var layout = new OO.ui.PanelLayout( { padded: true, expanded: false } );
 
 		layout.$element.append(
 			$( '<strong>' ).text( mw.msg( 'mwe-upwiz-patent-dialog-title-warranty' ) ),
@@ -113,12 +113,10 @@
 	};
 
 	/**
-	 * @param {boolean} ownership
-	 * @param {boolean} grant
 	 * @return {OO.ui.PanelLayout}
 	 */
 	uw.PatentDialog.prototype.getLicenseLayout = function ( ownership, grant ) {
-		const layout = new OO.ui.PanelLayout( { padded: true, expanded: false } );
+		var layout = new OO.ui.PanelLayout( { padded: true, expanded: false } );
 
 		if ( ownership ) {
 			layout.$element.append(
@@ -146,7 +144,7 @@
 	 * @return {OO.ui.PanelLayout}
 	 */
 	uw.PatentDialog.prototype.getCheckboxLayout = function () {
-		const checkbox = new OO.ui.FieldLayout( this.checkbox, {
+		var checkbox = new OO.ui.FieldLayout( this.checkbox, {
 			label: mw.msg( 'mwe-upwiz-patent-dialog-checkbox-label' ),
 			align: 'inline'
 		} );
@@ -162,7 +160,7 @@
 	 * @param {boolean} checked
 	 */
 	uw.PatentDialog.prototype.onCheckboxChange = function ( checked ) {
-		const button = this.actions.get( { flags: 'primary' } )[ 0 ];
+		var button = this.actions.get( { flags: 'primary' } )[ 0 ];
 		button.setDisabled( !checked );
 	};
 
@@ -171,12 +169,14 @@
 	 * @return {OO.ui.Process} Action process
 	 */
 	uw.PatentDialog.prototype.getActionProcess = function ( action ) {
+		var dialog = this;
+
 		if ( action === '' ) {
 			this.emit( 'disagree' );
 		} else if ( action === 'confirm' ) {
-			return new OO.ui.Process( () => {
-				this.emit( 'agree' );
-				this.close( { action: action } );
+			return new OO.ui.Process( function () {
+				dialog.emit( 'agree' );
+				dialog.close( { action: action } );
 			} );
 		}
 

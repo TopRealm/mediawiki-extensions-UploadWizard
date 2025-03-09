@@ -19,7 +19,7 @@
 	QUnit.module( 'mw.uploadWizard.controller.Details', QUnit.newMwEnvironment() );
 
 	function createTestUpload( sandbox, aborted ) {
-		const stubs = {
+		var stubs = {
 			getSerialized: sandbox.stub(),
 			setSerialized: sandbox.stub(),
 			attach: sandbox.stub()
@@ -33,8 +33,7 @@
 			details: {
 				getSerialized: stubs.getSerialized,
 				setSerialized: stubs.setSerialized,
-				attach: stubs.attach,
-				on: function () {}
+				attach: stubs.attach
 			},
 
 			state: aborted ? 'aborted' : 'stashed',
@@ -43,8 +42,8 @@
 		};
 	}
 
-	QUnit.test( 'Constructor sanity test', ( assert ) => {
-		const step = new uw.controller.Details( new mw.Api(), {
+	QUnit.test( 'Constructor sanity test', function ( assert ) {
+		var step = new uw.controller.Details( new mw.Api(), {
 			maxSimultaneousConnections: 1
 		} );
 		assert.true( step instanceof uw.controller.Step );
@@ -52,12 +51,11 @@
 	} );
 
 	QUnit.test( 'load', function ( assert ) {
-		const step = new uw.controller.Details( new mw.Api(), {
+		var step = new uw.controller.Details( new mw.Api(), {
 				maxSimultaneousConnections: 1
 			} ),
+			testUpload = createTestUpload( this.sandbox ),
 			stepUiStub = this.sandbox.stub( step.ui, 'load' );
-
-		let testUpload = createTestUpload( this.sandbox );
 
 		// replace createDetails with a stub; UploadWizardDetails needs way too
 		// much setup to actually be able to create it
@@ -87,8 +85,8 @@
 		assert.true( stepUiStub.called );
 	} );
 
-	QUnit.test( 'canTransition', ( assert ) => {
-		const upload = {},
+	QUnit.test( 'canTransition', function ( assert ) {
+		var upload = {},
 			step = new uw.controller.Details( new mw.Api(), {
 				maxSimultaneousConnections: 1
 			} );
@@ -101,19 +99,22 @@
 	} );
 
 	QUnit.test( 'transitionAll', function ( assert ) {
-		const done = assert.async(),
+		var tostub,
+			done = assert.async(),
 			donestub = this.sandbox.stub(),
 			ds = [ $.Deferred(), $.Deferred(), $.Deferred() ],
-			ps = [ ds[ 0 ].promise(), ds[ 1 ].promise(), ds[ 2 ].promise() ];
+			ps = [ ds[ 0 ].promise(), ds[ 1 ].promise(), ds[ 2 ].promise() ],
+			calls = [],
+			step;
 
-		const tostub = this.sandbox.stub( uw.controller.Details.prototype, 'transitionOne' );
+		tostub = this.sandbox.stub( uw.controller.Details.prototype, 'transitionOne' );
 		tostub.onFirstCall().returns( ps[ 0 ] );
 		tostub.onSecondCall().returns( ps[ 1 ] );
 		tostub.onThirdCall().returns( ps[ 2 ] );
 
 		this.sandbox.stub( uw.controller.Details.prototype, 'canTransition' ).returns( true );
 
-		const step = new uw.controller.Details( new mw.Api(), {
+		step = new uw.controller.Details( new mw.Api(), {
 			maxSimultaneousConnections: 3
 		} );
 
@@ -125,19 +126,19 @@
 		];
 
 		step.transitionAll().done( donestub );
-		setTimeout( () => {
-			const calls = [ tostub.getCall( 0 ), tostub.getCall( 1 ), tostub.getCall( 2 ) ];
+		setTimeout( function () {
+			calls = [ tostub.getCall( 0 ), tostub.getCall( 1 ), tostub.getCall( 2 ) ];
 
 			assert.strictEqual( calls[ 0 ].args[ 0 ].id, 15 );
 			assert.strictEqual( calls[ 1 ].args[ 0 ].id, 21 );
 
 			ds[ 0 ].resolve();
 			ds[ 1 ].resolve();
-			setTimeout( () => {
+			setTimeout( function () {
 				assert.strictEqual( donestub.called, false );
 
 				ds[ 2 ].resolve();
-				setTimeout( () => {
+				setTimeout( function () {
 					assert.true( donestub.called );
 
 					done();

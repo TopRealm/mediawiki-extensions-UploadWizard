@@ -26,6 +26,8 @@
 	 * @param {Object} config UploadWizard config object.
 	 */
 	uw.controller.Upload = function UWControllerUpload( api, config ) {
+		var step = this;
+
 		uw.controller.Step.call(
 			this,
 			new uw.ui.Upload( config )
@@ -44,20 +46,16 @@
 			action: this.transitionOne.bind( this )
 		} );
 		this.queue.on( 'complete', this.showNext.bind( this ) );
-		this.queue.on( 'change', () => this.emit( 'change' ) );
-		this.queue.on( 'progress', () => this.emit( 'change' ) );
-		this.queue.on( 'complete', () => this.emit( 'change' ) );
 
-		this.ui.on( 'files-added', ( files ) => {
-			const totalFiles = files.length + this.uploads.length,
-				tooManyFiles = totalFiles > this.config.maxUploads;
+		this.ui.on( 'files-added', function ( files ) {
+			var totalFiles = files.length + step.uploads.length,
+				tooManyFiles = totalFiles > step.config.maxUploads;
 
 			if ( tooManyFiles ) {
-				this.ui.showTooManyFilesError( totalFiles );
+				step.ui.showTooManyFilesError( totalFiles );
 			} else {
-				this.addFiles( files );
+				step.addFiles( files );
 			}
-			this.emit( 'change' );
 		} );
 	};
 
@@ -67,16 +65,19 @@
 	 * Updates the upload step data when a file is added or removed.
 	 */
 	uw.controller.Upload.prototype.updateFileCounts = function () {
-		const max = this.config.maxUploads;
+		var fewerThanMax, haveUploads,
+			max = this.config.maxUploads;
 
-		const haveUploads = this.uploads.length > 0;
-		const fewerThanMax = this.uploads.length < max;
+		haveUploads = this.uploads.length > 0;
+		fewerThanMax = this.uploads.length < max;
 
 		this.updateProgressBarCount( this.uploads.length );
 		this.ui.updateFileCounts( haveUploads, fewerThanMax );
 	};
 
 	uw.controller.Upload.prototype.load = function ( uploads ) {
+		var controller = this;
+
 		uw.controller.Step.prototype.load.call( this, uploads );
 		this.updateFileCounts();
 		this.startProgressBar();
@@ -95,8 +96,8 @@
 			 * with new uploads, and still understand the existing files that
 			 * we've just reset the state for.
 			 */
-			uploads.forEach( ( upload ) => {
-				upload.state = upload.fileKey === undefined ? 'error' : this.finishState;
+			uploads.forEach( function ( upload ) {
+				upload.state = upload.fileKey === undefined ? 'error' : controller.finishState;
 			} );
 
 			this.showNext();
@@ -166,7 +167,7 @@
 	 * @return {jQuery.Promise}
 	 */
 	uw.controller.Upload.prototype.transitionOne = function ( upload ) {
-		const promise = upload.start();
+		var promise = upload.start();
 		this.maybeStartProgressBar();
 		return promise;
 	};
@@ -190,13 +191,15 @@
 	};
 
 	uw.controller.Upload.prototype.retry = function () {
-		this.uploads.forEach( ( upload ) => {
+		var controller = this;
+
+		this.uploads.forEach( function ( upload ) {
 			if ( upload.state === 'error' ) {
 				// reset any uploads in error state back to be shiny & new
 				upload.state = 'new';
 				upload.ui.clearStatus();
 				// and queue them
-				this.queueUpload( upload );
+				controller.queueUpload( upload );
 			}
 		} );
 
@@ -211,11 +214,13 @@
 	 * @return {mw.UploadWizardUpload|boolean} The new upload, or false if it can't be added
 	 */
 	uw.controller.Upload.prototype.addFile = function ( file ) {
+		var upload;
+
 		if ( this.uploads.length >= this.config.maxUploads ) {
 			return false;
 		}
 
-		const upload = new mw.UploadWizardUpload( this, file );
+		upload = new mw.UploadWizardUpload( this, file );
 
 		if ( !this.validateFile( upload ) ) {
 			return false;
@@ -239,11 +244,16 @@
 	 * @param {FileList} files
 	 */
 	uw.controller.Upload.prototype.addFiles = function ( files ) {
-		const uploadObjs = [];
+		var
+			uploadObj,
+			i,
+			file,
+			uploadObjs = [],
+			controller = this;
 
-		for ( let i = 0; i < files.length; i++ ) {
-			const file = files[ i ];
-			const uploadObj = this.addFile( file );
+		for ( i = 0; i < files.length; i++ ) {
+			file = files[ i ];
+			uploadObj = controller.addFile( file );
 			if ( uploadObj ) {
 				uploadObjs.push( uploadObj );
 			}
@@ -292,7 +302,9 @@
 	 * @return {boolean} Error in [code, info] format, or empty [] for no errors
 	 */
 	uw.controller.Upload.prototype.validateFile = function ( upload ) {
-		const actualMaxSize = mw.UploadWizard.config.maxMwUploadSize,
+		var extension,
+			i,
+			actualMaxSize = mw.UploadWizard.config.maxMwUploadSize,
 
 			// Check if filename is acceptable
 			// TODO sanitize filename
@@ -300,7 +312,7 @@
 			basename = upload.getBasename();
 
 		// check to see if this file has already been selected for upload
-		for ( let i = 0; i < this.uploads.length; i++ ) {
+		for ( i = 0; i < this.uploads.length; i++ ) {
 			if ( upload !== this.uploads[ i ] && filename === this.uploads[ i ].getFilename() ) {
 				this.ui.showDuplicateError( filename, basename );
 				return false;
@@ -310,7 +322,7 @@
 		// check if the filename is valid
 		upload.setTitle( basename );
 		if ( !upload.title ) {
-			if ( !basename.includes( '.' ) ) {
+			if ( basename.indexOf( '.' ) === -1 ) {
 				this.ui.showMissingExtensionError( filename );
 				return false;
 			} else {
@@ -320,7 +332,7 @@
 		}
 
 		// check if extension is acceptable
-		const extension = upload.title.getExtension();
+		extension = upload.title.getExtension();
 		if ( !extension ) {
 			this.ui.showMissingExtensionError( filename );
 			return false;
@@ -328,7 +340,7 @@
 
 		if (
 			mw.UploadWizard.config.fileExtensions !== null &&
-			!mw.UploadWizard.config.fileExtensions.includes( extension.toLowerCase() )
+			mw.UploadWizard.config.fileExtensions.indexOf( extension.toLowerCase() ) === -1
 		) {
 			this.ui.showBadExtensionError( filename, extension );
 			return false;

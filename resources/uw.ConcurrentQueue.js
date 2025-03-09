@@ -7,8 +7,7 @@
 	 * Items can be added or removed (#addItem, #removeItem) while the queue is already being
 	 * executed.
 	 *
-	 * @class
-	 * @mixes OO.EventEmitter
+	 * @mixins OO.EventEmitter
 	 * @param {Object} options
 	 * @param {Function} options.action Action to execute for each item, must return a Promise
 	 * @param {number} options.count Number of functions to execute concurrently
@@ -33,19 +32,19 @@
 	/**
 	 * A 'progress' event is emitted when one of the functions' promises is resolved or rejected.
 	 *
-	 * @event uw.ConcurrentQueue.progress
+	 * @event progress
 	 */
 
 	/**
 	 * A 'complete' event is emitted when all of the functions' promises have been resolved or rejected.
 	 *
-	 * @event uw.ConcurrentQueue.complete
+	 * @event complete
 	 */
 
 	/**
 	 * A 'change' event is emitted when an item is added to or removed from the queue.
 	 *
-	 * @event uw.ConcurrentQueue.change
+	 * @event change
 	 */
 
 	/**
@@ -72,7 +71,7 @@
 	 * @return {boolean} Whether the item was removed
 	 */
 	uw.ConcurrentQueue.prototype.removeItem = function ( item ) {
-		let index, found;
+		var index, found;
 
 		found = false;
 
@@ -115,7 +114,8 @@
 	 * @param {Object} item
 	 */
 	uw.ConcurrentQueue.prototype.promiseComplete = function ( item ) {
-		const index = this.running.indexOf( item );
+		var index;
+		index = this.running.indexOf( item );
 		// Check that this item wasn't removed while it was being executed
 		if ( index !== -1 ) {
 			this.running.splice( index, 1 );
@@ -133,16 +133,17 @@
 	 * @private
 	 */
 	uw.ConcurrentQueue.prototype.executeNext = function () {
+		var item, promise;
 		if ( this.running.length >= this.count || !this.executing ) {
 			return;
 		}
-		const item = this.queued.shift();
+		item = this.queued.shift();
 		if ( !item ) {
 			return;
 		}
 
 		this.running.push( item );
-		const promise = this.action.call( null, item );
+		promise = this.action.call( null, item );
 		this.runningPromises.push( promise );
 		promise.always( this.promiseComplete.bind( this, item ) );
 	};
@@ -153,7 +154,7 @@
 	 * When the queue finishes executing, a 'complete' event will be emitted.
 	 */
 	uw.ConcurrentQueue.prototype.startExecuting = function () {
-		let i;
+		var i;
 		if ( this.executing ) {
 			return;
 		}

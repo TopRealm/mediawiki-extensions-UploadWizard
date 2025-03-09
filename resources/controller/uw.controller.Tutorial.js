@@ -26,6 +26,8 @@
 	 * @param {Object} config UploadWizard config object.
 	 */
 	uw.controller.Tutorial = function UWControllerTutorial( api, config ) {
+		var controller = this;
+
 		this.skipPreference = Boolean( mw.user.options.get( 'upwiz_skiptutorial' ) );
 		this.newSkipPreference = this.skipPreference;
 		this.skipped = false;
@@ -33,11 +35,10 @@
 		uw.controller.Step.call(
 			this,
 			new uw.ui.Tutorial()
-				.on( 'skip-tutorial-click', ( skipped ) => {
+				.on( 'skip-tutorial-click', function ( skipped ) {
 					// indicate that the skip preference has changed, so we can
 					// alter the preference when we move to another step
-					this.newSkipPreference = skipped;
-					this.emit( 'change' );
+					controller.newSkipPreference = skipped;
 				} ),
 			api,
 			config
@@ -56,22 +57,23 @@
 	 * @param {boolean} skip
 	 */
 	uw.controller.Tutorial.prototype.setSkipPreference = function ( skip ) {
-		const allowCloseWindow = mw.confirmCloseWindow();
+		var controller = this,
+			allowCloseWindow = mw.confirmCloseWindow();
 
 		this.api.postWithToken( 'options', {
 			action: 'options',
 			change: skip ? 'upwiz_skiptutorial=1' : 'upwiz_skiptutorial'
-		} ).done( () => {
+		} ).done( function () {
 			allowCloseWindow.release();
-			this.skipPreference = skip;
-		} ).fail( ( code, err ) => {
+			controller.skipPreference = skip;
+		} ).fail( function ( code, err ) {
 			mw.notify( err.textStatus );
 		} );
 	};
 
 	uw.controller.Tutorial.prototype.load = function ( uploads ) {
 		// tutorial can be skipped via preference, or config (e.g. campaign config)
-		const shouldSkipTutorial = this.skipPreference || ( this.config.tutorial && this.config.tutorial.skip );
+		var shouldSkipTutorial = this.skipPreference || ( this.config.tutorial && this.config.tutorial.skip );
 
 		uw.controller.Step.prototype.load.call( this, uploads );
 

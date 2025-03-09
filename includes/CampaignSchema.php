@@ -109,6 +109,14 @@ return [
 										// ATM only properties with dataType 'wikibase-entityid'
 										// are supported
 										"type" => "string"
+									],
+									"values" => [
+										"type" => "array",
+										"items" => [
+											[
+												"value" => "string"
+											]
+										]
 									]
 								]
 						]
@@ -227,9 +235,6 @@ return [
 										"head" => [
 											"type" => "string"
 										],
-										"head-extra" => [
-											"type" => "string"
-										],
 										"icons" => [
 											"type" => "array",
 											"items" => [
@@ -254,9 +259,6 @@ return [
 											]
 										],
 										"subhead" => [
-											"type" => "string"
-										],
-										"subhead-extra" => [
 											"type" => "string"
 										],
 										"type" => [
@@ -390,6 +392,9 @@ return [
 					"type" => "boolean",
 				],
 				'statements' => [
+					"type" => "boolean",
+				],
+				'nonDefaultStatements' => [
 					"type" => "boolean",
 				]
 			]

@@ -16,9 +16,6 @@
  */
 ( function () {
 
-	/**
-	 * @class
-	 */
 	mw.QuickTitleChecker = {};
 
 	mw.QuickTitleChecker.regexSets = {
@@ -73,10 +70,10 @@
 	 *   Possible error codes are 'invalid', 'senselessimagename', 'thumbnail', 'extension'.
 	 */
 	mw.QuickTitleChecker.checkTitle = function ( title ) {
-		const errors = [];
-		Object.keys( mw.QuickTitleChecker.regexSets ).forEach( ( setName ) => {
-			const regexes = mw.QuickTitleChecker.regexSets[ setName ];
-			regexes.forEach( ( regex ) => {
+		var errors = [];
+		Object.keys( mw.QuickTitleChecker.regexSets ).forEach( function ( setName ) {
+			var regexes = mw.QuickTitleChecker.regexSets[ setName ];
+			regexes.forEach( function ( regex ) {
 				if ( title.match( regex ) ) {
 					errors.push( setName );
 				}

@@ -7,7 +7,6 @@ use MediaWiki\Extension\UploadWizard\Config;
 use MediaWiki\Interwiki\ClassicInterwikiLookup;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use Wikimedia\TestingAccessWrapper;
 
 /**
  * Test the Upload Wizard Configuration
@@ -28,8 +27,8 @@ class ConfigTest extends MediaWikiIntegrationTestCase {
 		// insert a interwiki prefixes for testing inter-language links.
 		// This is based on ParserTestRunner::appendInterwikiSetup, which does
 		// exactly the same (but with more prefixes) for parser tests.
-		$this->overrideConfigValues( [
-			'InterwikiCache' => ClassicInterwikiLookup::buildCdbHash( [
+		$this->setMwGlobals( [
+			'wgInterwikiCache' => ClassicInterwikiLookup::buildCdbHash( [
 				[
 					'iw_prefix' => 'es',
 					'iw_url' => 'http://es.wikipedia.org/wiki/$1',
@@ -39,19 +38,6 @@ class ConfigTest extends MediaWikiIntegrationTestCase {
 				],
 			] ),
 		] );
-	}
-
-	protected function tearDown(): void {
-		parent::tearDown();
-
-		// T378299: Undo effect of Config::setUrlSetting() in setUp().
-		// $wgUploadWizardConfig defaults to empty array, which MediaWiki/PHPUnit
-		// automatically restore. This is not enough, because UploadWizard\Config
-		// applies another layer of defaults from UploadWizard.config.php, which it
-		// remembers via internal static $mergedConfig. This works in prod by doing
-		// it once and then storing the result in-place in the global variable.
-		// This does not work for more than 1 test in a row.
-		TestingAccessWrapper::newFromClass( Config::class )->mergedConfig = false;
 	}
 
 	public static function objRefProvider() {
@@ -87,8 +73,8 @@ class ConfigTest extends MediaWikiIntegrationTestCase {
 	) {
 		global $wgUploadWizardConfig;
 
-		$this->overrideConfigValues( [
-			'UploadWizardConfig' => array_merge( $wgUploadWizardConfig, [
+		$this->setMwGlobals( [
+			'wgUploadWizardConfig' => array_merge( $wgUploadWizardConfig, [
 				'defaults' => [ 'objref' => $objRef ],
 			] ),
 		] );

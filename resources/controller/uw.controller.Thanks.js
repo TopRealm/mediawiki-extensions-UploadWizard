@@ -38,6 +38,8 @@
 	OO.inheritClass( uw.controller.Thanks, uw.controller.Step );
 
 	uw.controller.Thanks.prototype.load = function ( uploads ) {
+		var thanks = this;
+
 		uw.controller.Step.prototype.load.call( this, uploads );
 
 		if ( uploads.length === 0 ) {
@@ -46,11 +48,9 @@
 			return;
 		}
 
-		uploads.forEach( ( upload ) => {
-			this.ui.addUpload( upload );
+		uploads.forEach( function ( upload ) {
+			thanks.ui.addUpload( upload );
 		} );
-
-		this.emit( 'finished' );
 	};
 
 	uw.controller.Thanks.prototype.moveNext = function () {

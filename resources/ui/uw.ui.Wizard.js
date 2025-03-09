@@ -19,8 +19,9 @@
 	/**
 	 * Represents the UI for the wizard.
 	 *
-	 * @class
-	 * @mixes OO.EventEmitter
+	 * @class uw.ui.Wizard
+	 * @mixins OO.EventEmitter
+	 * @constructor
 	 * @param {string} selector Where to put all of the wizard interface.
 	 */
 	uw.ui.Wizard = function UWUIWizard( selector ) {
@@ -45,10 +46,10 @@
 	 * @param {Object} config
 	 */
 	uw.ui.Wizard.prototype.initHeader = function ( config ) {
-		// eslint-disable-next-line no-jquery/no-global-selector
-		const $contentSub = $( '#contentSub' );
+		var feedbackLink,
+			// eslint-disable-next-line no-jquery/no-global-selector
+			$contentSub = $( '#contentSub' );
 
-		let feedbackLink;
 		if ( config.feedbackLink ) {
 			// Preferred. Send user to bug tracker (defaults to UW's own
 			// Phabricator project)
@@ -92,7 +93,7 @@
 	 * @param {Object|string} configAltUploadForm A link or map of languages to links, pointing at an alternate form.
 	 */
 	uw.ui.Wizard.prototype.initAltUploadForm = function ( configAltUploadForm ) {
-		let altUploadForm, userLanguage, title;
+		var altUploadForm, userLanguage, title;
 
 		if ( typeof configAltUploadForm === 'object' ) {
 			userLanguage = mw.config.get( 'wgUserLanguage' );
@@ -128,33 +129,26 @@
 	 * @param {Object.<uw.controller.Step>} steps
 	 */
 	uw.ui.Wizard.prototype.initialiseSteps = function ( steps ) {
-		const $steps = $( '<ul>' )
+		var $steps = $( '<ul>' )
 				.attr( 'id', 'mwe-upwiz-steps' )
 				.addClass( 'ui-helper-clearfix' )
 				.insertBefore( '#mwe-upwiz-content' ),
-			sortedSteps = this.sortSteps( Object.keys( steps ).map( ( key ) => steps[ key ] ) );
+			sortedSteps = this.sortSteps( Object.keys( steps ).map( function ( key ) {
+				return steps[ key ];
+			} ) );
 
-		sortedSteps.forEach( ( step ) => {
-			const $arrow = $( '<li>' )
+		sortedSteps.forEach( function ( step ) {
+			var $arrow = $( '<li>' )
 				.attr( 'id', 'mwe-upwiz-step-' + step.stepName )
 				.append(
 					$( '<div>' ).text( mw.message( 'mwe-upwiz-step-' + step.stepName ).text() )
 				);
-			if ( step.showInBreadcrumb ) {
-				$steps.append( $arrow );
-			}
+			$steps.append( $arrow );
 
 			// once a (new) step loads, highlight it
-			step.on( 'load', ( ( $arr ) => {
-				if ( step.showInBreadcrumb ) {
-					$steps.arrowStepsHighlight( $arr );
-				}
-				$steps.show();
-			} ).bind( step, $arrow ) );
-
-			step.on( 'finished', () => {
-				$steps.hide();
-			} );
+			step.on( 'load', function ( $arrow ) {
+				$steps.arrowStepsHighlight( $arrow );
+			}.bind( step, $arrow ) );
 		} );
 
 		$steps.arrowSteps();
@@ -167,7 +161,9 @@
 	 * @return {uw.controller.Step[]}
 	 */
 	uw.ui.Wizard.prototype.sortSteps = function ( steps ) {
-		let first = steps[ 0 ];
+		var first = steps[ 0 ],
+			sorted,
+			i;
 
 		// find the very first step (element at position [0] is not guaranteed
 		// to be first (it was just added first)
@@ -177,8 +173,8 @@
 			first = first.previousStep;
 		}
 
-		const sorted = [ first ];
-		for ( let i = 1; i < steps.length; i++ ) {
+		sorted = [ first ];
+		for ( i = 1; i < steps.length; i++ ) {
 			sorted.push( sorted[ i - 1 ].nextStep );
 		}
 

@@ -19,12 +19,15 @@
 	/**
 	 * Set up the form and deed object for the deed option that says these uploads are the work of a third party.
 	 *
-	 * @class
+	 * @class uw.deed.ThirdParty
+	 * @constructor
 	 * @param {Object} config The UW config
 	 * @param {mw.UploadWizardUpload[]} uploads Array of uploads that this deed refers to
 	 * @param {mw.Api} api API object - useful for doing previews
 	 */
 	uw.deed.ThirdParty = function UWDeedThirdParty( config, uploads, api ) {
+		var deed = this;
+
 		uw.deed.Abstract.call( this, 'thirdparty', config, uploads );
 
 		this.uploadCount = uploads.length;
@@ -35,31 +38,34 @@
 			classes: [ 'mwe-source' ],
 			name: 'source'
 		} );
-		this.sourceInput.on( 'change', () => this.emit( 'change' ) );
 		this.sourceInput.$input.attr( 'id', 'mwe-source-' + this.getInstanceCount() );
 		// See uw.DetailsWidget
-		uw.ValidatableElement.decorate( this.sourceInput );
-		this.sourceInput.validate = ( thorough ) => {
-			const status = new uw.ValidationStatus(),
-				minLength = this.config.minSourceLength,
-				maxLength = this.config.maxSourceLength,
-				text = this.sourceInput.getValue().trim();
+		this.sourceInput.getErrors = function ( thorough ) {
+			var
+				errors = [],
+				minLength = deed.config.minSourceLength,
+				maxLength = deed.config.maxSourceLength,
+				text = this.getValue().trim();
 
 			if ( thorough !== true ) {
 				// `thorough` is the strict checks executed on submit, but we don't want errors
 				// to change/display every change event
-				return status.resolve();
+				return [];
 			}
 
 			if ( text === '' ) {
-				status.addError( mw.message( 'mwe-upwiz-error-question-blank' ) );
+				errors.push( mw.message( 'mwe-upwiz-error-question-blank' ) );
 			} else if ( text.length < minLength ) {
-				status.addError( mw.message( 'mwe-upwiz-error-too-short', minLength ) );
+				errors.push( mw.message( 'mwe-upwiz-error-too-short', minLength ) );
 			} else if ( text.length > maxLength ) {
-				status.addError( mw.message( 'mwe-upwiz-error-too-long', maxLength ) );
+				errors.push( mw.message( 'mwe-upwiz-error-too-long', maxLength ) );
 			}
 
-			return status.getErrors().length === 0 ? status.resolve() : status.reject();
+			return errors;
+		};
+		// See uw.DetailsWidget
+		this.sourceInput.getWarnings = function () {
+			return $.Deferred().resolve( [] ).promise();
 		};
 		this.sourceInputField = new uw.FieldLayout( this.sourceInput, {
 			label: $( '<li>' )
@@ -73,34 +79,37 @@
 			classes: [ 'mwe-author' ],
 			name: 'author'
 		} );
-		this.authorInput.on( 'change', () => this.emit( 'change' ) );
 		this.authorInput.$input.attr( 'id', 'mwe-author-' + this.getInstanceCount() );
-		uw.ValidatableElement.decorate( this.authorInput );
-		this.authorInput.validate = ( thorough ) => {
-			const status = new uw.ValidationStatus(),
-				minLength = this.config.minAuthorLength,
-				maxLength = this.config.maxAuthorLength,
-				text = this.authorInput.getValue().trim();
+		this.authorInput.getErrors = function ( thorough ) {
+			var
+				errors = [],
+				minLength = deed.config.minAuthorLength,
+				maxLength = deed.config.maxAuthorLength,
+				text = this.getValue().trim();
 
 			if ( thorough !== true ) {
 				// `thorough` is the strict checks executed on submit, but we don't want errors
 				// to change/display every change event
-				return status.resolve();
+				return [];
 			}
 
-			if ( this.authorInput.isDisabled() ) {
-				return status.resolve();
+			if ( this.isDisabled() ) {
+				return [];
 			}
 
 			if ( text === '' ) {
-				status.addError( mw.message( 'mwe-upwiz-error-question-blank' ) );
+				errors.push( mw.message( 'mwe-upwiz-error-question-blank' ) );
 			} else if ( text.length < minLength ) {
-				status.addError( mw.message( 'mwe-upwiz-error-too-short', minLength ) );
+				errors.push( mw.message( 'mwe-upwiz-error-too-short', minLength ) );
 			} else if ( text.length > maxLength ) {
-				status.addError( mw.message( 'mwe-upwiz-error-too-long', maxLength ) );
+				errors.push( mw.message( 'mwe-upwiz-error-too-long', maxLength ) );
 			}
 
-			return status.getErrors().length === 0 ? status.resolve() : status.reject();
+			return $.Deferred().resolve( errors ).promise();
+		};
+		// See uw.DetailsWidget
+		this.authorInput.getWarnings = function () {
+			return $.Deferred().resolve( [] ).promise();
 		};
 		this.authorInputField = new uw.FieldLayout( this.authorInput, {
 			label: $( '<li>' )
@@ -114,13 +123,56 @@
 			this.uploadCount,
 			api
 		);
-		this.licenseInput.on( 'change', () => this.emit( 'change' ) );
 		this.licenseInput.$element.addClass( 'mwe-upwiz-deed-license-groups' );
 		this.licenseInput.setDefaultValues();
 		this.licenseInputField = new uw.FieldLayout( this.licenseInput, {
-			label: $( '<li>' )
-				.addClass( 'mwe-upwiz-label-title' )
-				.append( mw.message( 'mwe-upwiz-source-thirdparty-cases-title', this.uploadCount, mw.user ).parseDom() ),
+			label: $( '<div>' ).append(
+				$( '<li>' )
+					.addClass( 'mwe-upwiz-label-title' )
+					.append( mw.message( 'mwe-upwiz-source-thirdparty-cases-text', this.uploadCount, mw.user ).parseDom() ),
+				$( '<span>' )
+					.addClass( 'mwe-upwiz-label-extra' )
+					.text( mw.message( 'mwe-upwiz-tooltip-thirdparty-license', this.uploadCount, mw.user ).text() )
+			),
+			required: true
+		} );
+
+		this.complianceCheck = new OO.ui.CheckboxMultiselectWidget( {
+			items: [
+				new OO.ui.CheckboxMultioptionWidget( {
+					label: mw.message( 'mwe-upwiz-source-thirdparty-compliance-option-copyright', this.uploadCount, mw.user ).text(),
+					data: 'copyright'
+				} )
+			],
+			classes: [ 'mwe-upwiz-deed-compliance' ]
+		} );
+		this.complianceCheck.getErrors = function ( thorough ) {
+			var allSelected = deed.complianceCheck.getItems().reduce( function ( result, item ) {
+				return result && item.isSelected();
+			}, true );
+
+			if ( thorough !== true ) {
+				// `thorough` is the strict checks executed on submit, but we don't want errors
+				// to change/display every change event
+				return [];
+			}
+
+			if ( !allSelected ) {
+				return [ mw.message( 'mwe-upwiz-deeds-require-selection' ) ];
+			}
+
+			return [];
+		};
+		this.complianceCheck.getWarnings = function () {
+			// just here for completeness; there is no warning ATM
+			return [];
+		};
+		this.complianceField = new uw.FieldLayout( this.complianceCheck, {
+			label: $( '<div>' ).append(
+				$( '<li>' )
+					.addClass( 'mwe-upwiz-label-title' )
+					.append( mw.message( 'mwe-upwiz-source-thirdparty-compliance-label', this.uploadCount, mw.user ).parseDom() )
+			),
 			required: true
 		} );
 
@@ -139,10 +191,11 @@
 	 * @return {uw.FieldLayout[]} Fields that need validation
 	 */
 	uw.deed.ThirdParty.prototype.getFields = function () {
-		const fields = [
+		var fields = [
 			this.authorInputField,
 			this.sourceInputField,
-			this.licenseInputField
+			this.licenseInputField,
+			this.complianceField
 		];
 		if ( this.threeDCount > 0 ) {
 			fields.push( this.patentAgreementField );
@@ -151,7 +204,7 @@
 	};
 
 	uw.deed.ThirdParty.prototype.setFormFields = function ( $selector ) {
-		const $formFields = $( '<div>' ).addClass( 'mwe-upwiz-deed-form-internal' );
+		var $formFields = $( '<div>' ).addClass( 'mwe-upwiz-deed-form-internal' ), self = this;
 
 		this.$form = $( '<form>' );
 
@@ -176,7 +229,9 @@
 				$( '<div>' ).addClass( 'mwe-upwiz-thirdparty-fields' )
 					.append( this.sourceInputField.$element ),
 				$( '<div>' ).addClass( 'mwe-upwiz-thirdparty-fields' )
-					.append( this.authorInputField.$element )
+					.append( this.authorInputField.$element ),
+				$( '<div>' ).addClass( 'mwe-upwiz-thirdparty-fields' )
+					.append( this.complianceField.$element )
 			)
 		);
 
@@ -187,8 +242,8 @@
 				$( '<div>' ).addClass( 'mwe-upwiz-thirdparty-checkbox' )
 					.append( this.templateOptions.aiGenerated.field.$element )
 			);
-			this.templateOptions.aiGenerated.input.$element.on( 'change', () => {
-				this.updateAuthorFieldForAI();
+			this.templateOptions.aiGenerated.input.$element.on( 'change', function () {
+				self.updateAuthorFieldForAI();
 			} );
 
 			// Set up ai-relevant help text for the author input field that can be shown
@@ -216,13 +271,13 @@
 				);
 			}
 
-			this.templateOptions.authorUnknown.input.$element.on( 'change', () => {
-				if ( this.templateOptions.authorUnknown.input.isSelected() ) {
-					this.authorInput.setDisabled( true );
-					this.authorInput.setValue( '' );
-					this.authorInputField.validate( false );
+			this.templateOptions.authorUnknown.input.$element.on( 'change', function () {
+				if ( self.templateOptions.authorUnknown.input.isSelected() ) {
+					self.authorInput.setDisabled( true );
+					self.authorInput.setValue( '' );
+					self.authorInputField.checkValidity( false );
 				} else {
-					this.authorInput.setDisabled( false );
+					self.authorInput.setDisabled( false );
 				}
 			} );
 		}
@@ -289,7 +344,7 @@
 	 * @inheritdoc
 	 */
 	uw.deed.Abstract.prototype.getLicenseWikiText = function ( upload ) {
-		let wikitext = this.licenseInput.getWikiText();
+		var wikitext = this.licenseInput.getWikiText();
 
 		if ( this.needsPatentAgreement( upload ) ) {
 			wikitext += '\n{{' + this.config.patents.template + '}}';
@@ -302,10 +357,13 @@
 	 * @return {Object}
 	 */
 	uw.deed.ThirdParty.prototype.getSerialized = function () {
-		return Object.assign( uw.deed.Abstract.prototype.getSerialized.call( this ), {
+		return $.extend( uw.deed.Abstract.prototype.getSerialized.call( this ), {
 			source: this.sourceInput.getValue(),
 			author: this.authorInput.getValue(),
-			license: this.licenseInput.getSerialized()
+			license: this.licenseInput.getSerialized(),
+			compliance: this.complianceCheck.findSelectedItems().map( function ( item ) {
+				return item.getData();
+			} )
 		} );
 	};
 
@@ -324,6 +382,9 @@
 		if ( serialized.license ) {
 			this.licenseInput.setSerialized( serialized.license );
 		}
+		if ( serialized.compliance ) {
+			this.complianceCheck.selectItemsByData( serialized.compliance );
+		}
 
 		if ( this.templateOptions.authorUnknown ) {
 			this.authorInput.setDisabled(
@@ -335,66 +396,4 @@
 			}
 		}
 	};
-
-	uw.deed.ThirdParty.prototype.getStructuredDataFromSource = function () {
-		const source = this.getSourceWikiText(),
-			config = mw.UploadWizard.config,
-			urlRegex = /^https?:\/\/\S*\.\S*$/,
-			sourceRegex = new RegExp(
-				'(' +
-				Object.keys( config.sourceStringToWikidataIdMapping ).join( '|' ) +
-				')'
-			),
-			sourceStringMatch = sourceRegex.exec( source ) ? sourceRegex.exec( source )[ 0 ] : false;
-
-		if ( !config.wikibase.enabled ) {
-			return false;
-		}
-
-		if ( !sourceStringMatch && !urlRegex.test( source ) ) {
-			return false;
-		}
-
-		const wbDataModel = mw.loader.require( 'wikibase.datamodel' );
-
-		const sourceClaim = new wbDataModel.Claim(
-			new wbDataModel.PropertyValueSnak(
-				config.wikibase.properties.source,
-				// eslint-disable-next-line no-undef
-				dataValues.newDataValue( 'wikibase-entityid', {
-					id: config.wikibase.items.file_available_on_the_internet
-				} )
-			)
-		);
-
-		const sourceQualifiers = new wbDataModel.SnakList();
-		if ( ( config.wikibase.properties.operator !== undefined ) && sourceStringMatch ) {
-			sourceQualifiers.addItem(
-				new wbDataModel.PropertyValueSnak(
-					config.wikibase.properties.operator,
-					// eslint-disable-next-line no-undef
-					dataValues.newDataValue( 'wikibase-entityid', {
-						id: config.sourceStringToWikidataIdMapping[ sourceStringMatch ]
-					} )
-				)
-			);
-		}
-		if ( urlRegex.test( source ) ) {
-			sourceQualifiers.addItem(
-				new wbDataModel.PropertyValueSnak(
-					config.wikibase.properties.described_at_url,
-					// eslint-disable-next-line no-undef
-					dataValues.newDataValue( 'string', source )
-				)
-			);
-		}
-		sourceClaim.setQualifiers( sourceQualifiers );
-
-		const wbSerialization = mw.loader.require( 'wikibase.serialization' );
-		const wbSerializer = new wbSerialization.StatementSerializer();
-		return wbSerializer.serialize(
-			new wbDataModel.Statement( sourceClaim )
-		);
-	};
-
 }( mw.uploadWizard ) );
