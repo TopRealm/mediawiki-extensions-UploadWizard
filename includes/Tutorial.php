@@ -81,8 +81,7 @@ class Tutorial {
 			// mwe-upwiz-tutorial-error-cannot-transform
 			$errorMsg = wfMessage( 'mwe-upwiz-tutorial-error-' . $error );
 			if ( $error === 'localized-file-missing' ) {
-				$errorMsg->params( MediaWikiServices::getInstance()->getLanguageNameUtils()
-					->getLanguageName( $langCode, $wgLang->getCode() ) );
+				$errorMsg->params( Language::fetchLanguageName( $langCode, $wgLang->getCode() ) );
 			}
 			$errorHtml = Html::errorBox(
 				$errorMsg->parse()

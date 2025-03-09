@@ -625,7 +625,6 @@
 			this.prefillDate();
 			this.prefillTitle();
 			this.prefillDescription();
-			this.prefillLocation();
 		},
 
 		/**

@@ -9,7 +9,8 @@
 			"Vahe Gharakhanyan",
 			"Xelgen",
 			"Աշոտ1997",
-			"Սերգեյ Սաֆարյան"
+			"Սերգեյ Սաֆարյան",
+			"Beko"
 		]
 	},
 	"uploadwizard": "Վերբեռնման օգնական",
@@ -68,6 +69,7 @@
 	"mwe-upwiz-stashed-upload": "Վերբեռնված է",
 	"mwe-upwiz-getting-metadata": "Նիշքի մասին տեղեկությունների ստացում և նախադիտում…",
 	"mwe-upwiz-submitting-details": "Մանրամասների ուղարկում...",
+	"mwe-upwiz-submitting-captions": "Ներկայացվում է {{PLURAL:$1| վերնագիր|վերնագրեր}}…",
 	"mwe-upwiz-published": "Հրապարակվա՛ծ է։",
 	"mwe-upwiz-failed": "Ձախողվեց։",
 	"mwe-upwiz-remove": "Ջնջել",

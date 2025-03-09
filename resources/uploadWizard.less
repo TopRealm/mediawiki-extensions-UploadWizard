@@ -67,6 +67,38 @@ form.mwe-upwiz-form {
 	display: none;
 }
 
+.mwe-upwiz-license-icon {
+	height: 18px;
+	margin-left: 6px;
+	padding: 9px;
+	width: 18px;
+}
+
+.mwe-upwiz-cc-zero-icon {
+	/* @embed */
+	background: url( images/18px-Cc-zero.svg.png ) no-repeat center center;
+}
+
+.mwe-upwiz-cc-sa-icon {
+	/* @embed */
+	background: url( images/18px-Share_Alike.svg.png ) no-repeat center center;
+}
+
+.mwe-upwiz-cc-by-icon {
+	/* @embed */
+	background: url( images/18px-Cc-by_new_white.svg.png ) no-repeat center center;
+}
+
+.mwe-upwiz-cc-nd-icon {
+	/* @embed */
+	background: url( images/18px-Cc-nd_white.svg.png ) no-repeat center center;
+}
+
+.mwe-upwiz-cc-nc-icon {
+	/* @embed */
+	background: url( images/18px-Cc-nc_white.svg.png ) no-repeat center center;
+}
+
 .mwe-upwiz-progress {
 	margin-top: 15px;
 }
@@ -177,15 +209,15 @@ a.mwe-upwiz-tooltip-link {
 }
 
 .ui-helper-clearfix {
-	&::before,
-	&::after {
+	&:before,
+	&:after {
 		content: '';
 		display: table;
 		border-collapse: collapse;
 	}
 }
 
-.ui-helper-clearfix::after {
+.ui-helper-clearfix:after {
 	clear: both;
 }
 

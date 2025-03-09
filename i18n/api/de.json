@@ -1,12 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Brettchenweber",
 			"Creepario",
 			"Inkowik",
 			"Kghbln",
 			"Metalhead64",
-			"Predatorix"
+			"Predatorix",
+			"Brettchenweber"
 		]
 	},
 	"apihelp-flickrblacklist-summary": "Validiert eine Flickr-URL durch die Verwendung der Benutzerkennung (NSID) für die Schwarzlistung.",

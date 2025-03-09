@@ -16,7 +16,7 @@
  */
 
 ( function ( uw ) {
-	QUnit.module( 'mw.uploadWizard.controller.Step', QUnit.newMwEnvironment() );
+	QUnit.module( 'uw.controller.Step', QUnit.newMwEnvironment() );
 
 	QUnit.test( 'Constructor sanity test', ( assert ) => {
 		var step = new uw.controller.Step( { on: function () {} }, new mw.Api(), {} );
