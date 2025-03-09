@@ -1,8 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"Musahfm",
-			"Mozanky"
+			"Mozanky",
+			"Musahfm"
 		]
 	},
 	"uploadwizard": "Upload Wizard",
@@ -54,7 +54,6 @@
 	"mwe-upwiz-stashed-upload": "Di kpɛn'ɛs ya",
 	"mwe-upwiz-getting-metadata": "Filednɛ faal labaar nɛ yɛlbanɛ dɛŋim gɔs....",
 	"mwe-upwiz-submitting-details": "Zaŋid wiesʋg tisid...",
-	"mwe-upwiz-submitting-captions": "Zaŋid {{PLURAL:$1|caption|captions}} tisid...",
 	"mwe-upwiz-published": "Di zaŋ pa'al sɔ' wʋsa",
 	"mwe-upwiz-failed": "Gʋ'ʋŋ nɛ",
 	"mwe-upwiz-remove": "Yiisim",
@@ -74,26 +73,21 @@
 	"mwe-upwiz-progressbar-uploading": "Vɛ'ɛgidi kpɛn'ɛsid....",
 	"mwe-upwiz-almost-finished": "Maannɛ faalnam...",
 	"mwe-upwiz-finished": "Naae ya",
+	"mwe-upwiz-deeds-macro-prompt-text": "Ba bu'osi ti labakaŋa yɛla ye li kɛ ka sɔ' mɛkama nyaŋi mɔr suor n zaŋ faal banɛ vɛ'ɛgi kpɛn'ɛs commons ni la tʋm yɔlisamm",
+	"mwe-upwiz-source-ownwork-label": "{{PLURAL: $1|Nɛ'ɛŋa an|Bama an}} mam mɛŋ tʋʋma ka sɔ' mɛkama tʋn'e nɔki tʋm ka daʋŋ kae {{PLURAL: $1|it|them}}.",
+	"mwe-upwiz-source-ownwork-description": "Tituunli: {{PLURAL: $1|footo |footo nam}} banɛ ka Wina'am maal, nɛ ninbɛdʋg la'asʋg nam ni, nɛ tʋʋma linɛ ka fʋ maal nɛ banɛ wʋsa bɛ.",
+	"mwe-upwiz-source-ownwork-origin-option-others-unknown": "Mam pʋ tis sidaa",
 	"mwe-upwiz-source-thirdparty-accept": "Tɔ'",
 	"mwe-upwiz-patent-dialog-button-back": "Nya'aŋ",
 	"mwe-upwiz-patent-dialog-button-next": "Tɔlisim tuon",
 	"mwe-upwiz-patent-dialog-link-warranty": "Zamisim bɛdegʋ",
 	"mwe-upwiz-patent-dialog-title-license": "Sida suor kasɛta gbaʋŋ",
 	"mwe-upwiz-patent-dialog-link-license": "Zamisim bɛdegʋ",
+	"mwe-upwiz-patent-dialog-link-license-grant": "Sida koot",
 	"mwe-upwiz-patent-dialog-checkbox-label": "Mam siak ya nɛ zi'el bama",
-	"mwe-upwiz-copy-statements-dialog-accept": "Ɛɛn, tu'asim",
-	"mwe-upwiz-copy-statements-button": "Tu'asim zaŋ nɔyɛlʋg nam la niŋ faalnamin",
-	"mwe-upwiz-copy-statements-button-done": "Tu'as ya",
-	"mwe-upwiz-copy-metadata-button": "Tu'asim zaŋ",
 	"mwe-upwiz-copy-metadata-button-undo": "Lɔdigim",
 	"mwe-upwiz-copied-metadata": "Tu'as ya",
 	"mwe-upwiz-undid-metadata": "Tu'asim lɔdigir",
-	"mwe-upwiz-copy-caption": "Tu'asim zaŋ pian'azug",
-	"mwe-upwiz-copy-description": "Tu'asim zaŋ pa'alʋg",
-	"mwe-upwiz-copy-date": "Tu'asim zaŋ dabisir",
-	"mwe-upwiz-copy-categories": "Tu'asim zaŋ buudi-buudi",
-	"mwe-upwiz-copy-location": "Tu'asim zaŋ zin'ig",
-	"mwe-upwiz-copy-other": "Tu'asim zaŋ labasieba",
 	"mwe-upwiz-caption": "Pian'agiŋ",
 	"mwe-upwiz-desc": "Awiesi pa'al",
 	"mwe-upwiz-title": "Footo yʋ'ʋr",
@@ -102,9 +96,8 @@
 	"mwe-upwiz-location": "Zin'ig",
 	"mwe-upwiz-location-button": "Pa'alim bɛ mappin",
 	"mwe-upwiz-location-heading": "Pian'azug",
-	"mwe-upwiz-copyright-info": "Yɔ'ɔgim suoya bas",
-	"mwe-upwiz-other": "Labasieba mɛn",
-	"mwe-upwiz-thanks-intro": "Pʋ'ʋs ya nɛ fʋn Vɛ'ɛgidi kpɛn'ɛsid la",
+	"mwe-upwiz-author-unknown": "Man zi' onɛ an sʋ'ʋd laa.",
+	"mwe-upwiz-author-not-known": "Mam pʋ mɔr labakaŋaa",
 	"mwe-upwiz-deleted-duplicate-unknown-filename": "Ti zi' faal yʋ'ʋrɛ",
 	"mwe-upwiz-ok": "Tɔ'",
 	"mwe-upwiz-next": "Tɔlisim tuon",
@@ -117,6 +110,7 @@
 	"mwe-upwiz-home": "Kem wiki zug lakirin",
 	"mwe-upwiz-upload-another": "Vɛ'ɛgim faalnam bɛdegʋ kpɛn'ɛs",
 	"mwe-upwiz-tooltip-more-info": "Zamisim bɛdegʋ",
+	"mwe-upwiz-deeds-require-selection": "Bɔɔdi gaŋir",
 	"mwe-upwiz-license-show-all": "Zaŋim kasɛta gbaʋŋ linɛ aan li kɔn'",
 	"mwe-upwiz-too-many-files": "Faalnam zu'oe nɛ galis",
 	"mwe-upwiz-file-too-large": "Faal zu'oe nɛ galis",
@@ -124,5 +118,6 @@
 	"mwe-upwiz-dialog-no": "Ayei",
 	"mwe-upwiz-dialog-title": "Kpan'amʋg",
 	"mwe-upwiz-campaign-upload-button": "Vɛ'ɛgim kpɛn'ɛs",
-	"mwe-upwiz-campaign-no-uploads-yet": "Si'el nam pʋ vɛ'ɛgi kpɛn'ɛsɛ"
+	"mwe-upwiz-campaign-no-uploads-yet": "Si'el nam pʋ vɛ'ɛgi kpɛn'ɛsɛ",
+	"mwe-upwiz-license-yes-head": "Ɛɛn, mam mɔr labakaŋa"
 }

@@ -4,22 +4,22 @@ namespace MediaWiki\Extension\UploadWizard\Specials;
 
 use BitmapHandler;
 use ChangeTags;
-use DerivativeContext;
-use Html;
 use LogicException;
+use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Extension\UploadWizard\Campaign;
 use MediaWiki\Extension\UploadWizard\Config;
 use MediaWiki\Extension\UploadWizard\Hooks;
 use MediaWiki\Extension\UploadWizard\Tutorial;
-use MediaWiki\User\UserOptionsLookup;
+use MediaWiki\Html\Html;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\User;
 use PermissionsError;
-use SpecialPage;
-use Title;
 use UploadBase;
 use UploadFromUrl;
-use User;
 use UserBlockedError;
-use WebRequest;
 
 /**
  * Special:UploadWizard
@@ -160,11 +160,11 @@ class SpecialUploadWizard extends SpecialPage {
 			$campaign = Campaign::newFromName( $campaignName );
 
 			if ( $campaign === false ) {
-				$this->displayError( $this->msg( 'mwe-upwiz-error-nosuchcampaign', $campaignName )->text() );
+				$this->displayError( $this->msg( 'mwe-upwiz-error-nosuchcampaign', $campaignName )->parse() );
 			} elseif ( $campaign->getIsEnabled() ) {
 				$this->campaign = $campaignName;
 			} else {
-				$this->displayError( $this->msg( 'mwe-upwiz-error-campaigndisabled', $campaignName )->text() );
+				$this->displayError( $this->msg( 'mwe-upwiz-error-campaigndisabled', $campaignName )->parse() );
 			}
 		}
 	}
@@ -222,7 +222,7 @@ class SpecialUploadWizard extends SpecialPage {
 		$userDefaultLicense = $this->userOptionsLookup->getOption( $this->getUser(), 'upwiz_deflicense' );
 
 		if ( $userDefaultLicense !== 'default' ) {
-			list( $userLicenseType, $userDefaultLicense ) = explode( '-', $userDefaultLicense, 2 );
+			[ $userLicenseType, $userDefaultLicense ] = explode( '-', $userDefaultLicense, 2 );
 
 			// Determine if the user's default license is valid for this campaign
 			switch ( $config['licensing']['ownWorkDefault'] ) {
@@ -263,7 +263,7 @@ class SpecialUploadWizard extends SpecialPage {
 		}
 
 		// add an 'uploadwizard' tag, but only if it'll be allowed
-		Hooks::onListDefinedTags( $tags );
+		Hooks::addListDefinedTags( $tags );
 		$status = ChangeTags::canAddTagsAccompanyingChange( $tags, $this->getUser() );
 		$config['CanAddTags'] = $status->isOK();
 
@@ -333,8 +333,6 @@ class SpecialUploadWizard extends SpecialPage {
 	 * Return the basic HTML structure for the entire page
 	 * Will be enhanced by the javascript to actually do stuff
 	 * @return string html
-	 * @suppress SecurityCheck-XSS The documentation of $config['display']['headerLabel'] says,
-	 *   it is wikitext, but all *label are used as html
 	 */
 	protected function getWizardHtml() {
 		$config = Config::getConfig( $this->campaign );

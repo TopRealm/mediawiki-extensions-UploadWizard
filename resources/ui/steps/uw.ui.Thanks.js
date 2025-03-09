@@ -19,16 +19,17 @@
 	/**
 	 * Represents the UI for the wizard's Thanks step.
 	 *
-	 * @class uw.ui.Thanks
+	 * @class
 	 * @extends uw.ui.Step
-	 * @constructor
 	 * @param {Object} config
 	 */
 	uw.ui.Thanks = function UWUIThanks( config ) {
-		var $header,
+		var homeButtonTarget,
+			homeButtonHref,
+			homeButtonUrl,
+			thanksMessage,
 			beginButtonTarget,
-			thanks = this,
-			userGroups = mw.config.get( 'wgUserGroups' );
+			thanks = this;
 
 		this.config = config;
 
@@ -45,24 +46,45 @@
 			this.getDelayNotice().prependTo( this.$div );
 		}
 
-		$( '<p>' )
-			.addClass( 'mwe-upwiz-thanks-explain' )
-			.msg( 'mwe-upwiz-thanks-explain' )
-			.prependTo( this.$div );
+		thanksMessage = new OO.ui.MessageWidget( {
+			type: 'success',
+			label: ( this.config.display && this.config.display.thanksLabel ) ?
+				new OO.ui.HtmlSnippet( this.config.display.thanksLabel ) :
+				mw.msg( 'mwe-upwiz-thanks-message' ),
+			classes: [ 'mwe-upwiz-thanks-message' ]
+		} );
+		thanksMessage.$element.prependTo( this.$div );
 
-		$header = $( '<h3>' )
-			.addClass( 'mwe-upwiz-thanks-header' )
-			.prependTo( this.$div );
-
-		if ( !this.config.display || !this.config.display.thanksLabel ) {
-			$header.text( mw.message( 'mwe-upwiz-thanks-intro' ).text() );
+		homeButtonTarget = this.getButtonConfig( 'homeButton', 'target' );
+		if ( !homeButtonTarget ) {
+			homeButtonHref = mw.config.get( 'wgArticlePath' ).replace( '$1', '' );
+		} else if ( homeButtonTarget === 'useObjref' ) {
+			homeButtonHref = homeButtonTarget;
 		} else {
-			$header.html( this.config.display.thanksLabel );
+			try {
+				homeButtonUrl = new URL( homeButtonTarget );
+				// URL parsing went fine: check the protocol.
+				// If `homeButtonTarget` is a wiki page in a non-main namespace,
+				// it will still be parsed into a URL with protocol == namespace.
+				if ( homeButtonUrl.protocol.startsWith( 'http' ) ) {
+					// HTTP URL: as is
+					homeButtonHref = homeButtonUrl.href;
+				} else {
+					// Page title in a non-main namespace
+					homeButtonHref = mw.config
+						.get( 'wgArticlePath' )
+						.replace( '$1', homeButtonTarget );
+				}
+			} catch ( error ) {
+				// Not a URL: assume a page title
+				homeButtonHref = mw.config
+					.get( 'wgArticlePath' )
+					.replace( '$1', homeButtonTarget );
+			}
 		}
-
 		this.homeButton = new OO.ui.ButtonWidget( {
 			label: this.getButtonConfig( 'homeButton', 'label' ) || mw.message( 'mwe-upwiz-home' ).text(),
-			href: this.getButtonConfig( 'homeButton', 'target' ) || mw.config.get( 'wgArticlePath' ).replace( '$1', '' )
+			href: homeButtonHref
 		} );
 
 		this.beginButton = new OO.ui.ButtonWidget( {
@@ -73,7 +95,7 @@
 		// TODO: make the step order configurable by campaign definitions instead of using these hacks
 		beginButtonTarget = this.getButtonConfig( 'beginButton', 'target' );
 		if ( !beginButtonTarget || ( beginButtonTarget === 'dropObjref' && !this.isObjectReferenceGiven() ) ) {
-			this.beginButton.on( 'click', function () {
+			this.beginButton.on( 'click', () => {
 				thanks.emit( 'next-step' );
 			} );
 		} else {
@@ -82,7 +104,7 @@
 			}
 			this.beginButton.setHref( beginButtonTarget );
 		}
-		this.beginButton.on( 'click', function () {
+		this.beginButton.on( 'click', () => {
 			mw.DestinationChecker.clearCache();
 		} );
 
@@ -91,20 +113,6 @@
 		} );
 
 		this.$buttons.append( this.buttonGroup.$element );
-
-		// If appropriate, add a dismissable Machine Vision CTA above content.
-		mw.loader.using( 'ext.MachineVision.config' ).then( function ( require ) {
-			var machineVisionConfig = require( 'ext.MachineVision.config' );
-			if ( machineVisionConfig && userGroups &&
-				machineVisionConfig.showComputerAidedTaggingCallToAction === true &&
-				userGroups.indexOf( 'autoconfirmed' ) !== -1 &&
-				( machineVisionConfig.testersOnly === false ||
-					userGroups.indexOf( 'machinevision-tester' ) !== -1 ) ) {
-				thanks.mvCtaCheckbox = new OO.ui.CheckboxInputWidget( { value: 'Notify me' } )
-					.connect( thanks, { change: thanks.onMvCtaCheckboxChange } );
-				thanks.addMachineVisionCta();
-			}
-		} );
 	};
 
 	OO.inheritClass( uw.ui.Thanks, uw.ui.Step );
@@ -132,7 +140,7 @@
 			.addClass( 'mwe-upwiz-thumbnail' )
 			.appendTo( $thumbnailWrapDiv );
 		$thumbnailCaption = $( '<div>' )
-			.css( { 'text-align': 'center', 'font-size': 'small' } )
+			.css( { 'text-align': 'left', 'font-size': 'small' } )
 			.appendTo( $thumbnailWrapDiv );
 		$thumbnailLink = $( '<a>' )
 			.text( upload.details.getTitle().getMainText() )
@@ -147,7 +155,7 @@
 			);
 
 		// This must match the CSS dimensions of .mwe-upwiz-thumbnail
-		upload.getThumbnail( 120, 120 ).done( function ( thumb ) {
+		upload.getThumbnail( 200, 200 ).done( ( thumb ) => {
 			mw.UploadWizard.placeThumbnail( $thumbnailDiv, thumb );
 		} );
 
@@ -158,129 +166,6 @@
 		} );
 
 		this.$div.find( '.mwe-upwiz-buttons' ).before( $thanksDiv );
-	};
-
-	/**
-	 * Add a call to action to opt into notifications for the machine vision
-	 * tool, and to visit the tool to tag popular uploads.
-	 */
-	uw.ui.Thanks.prototype.addMachineVisionCta = function () {
-		var mvCtaDismissedKey = 'upwiz_mv_cta_dismissed',
-			$mvCtaDiv,
-			$mvCtaDismiss,
-			$mvCtaContent,
-			$mvCtaCheckboxSection,
-			mvCtaCheckboxField;
-
-		// If the user has already opted into notifications or dismissed the
-		// CTA previously, don't show this.
-		if ( Number( mw.user.options.get( 'echo-subscriptions-web-machinevision' ) ) === 1 ||
-			Number( mw.user.options.get( mvCtaDismissedKey ) ) === 1 ) {
-			return;
-		}
-
-		// Wrapper div.
-		$mvCtaDiv = $( '<div>' ).addClass( 'mwe-upwiz-mv-cta' );
-
-		// Add dismiss icon button.
-		$mvCtaDismiss = new OO.ui.ButtonWidget( {
-			classes: [ 'mwe-upwiz-mv-cta-dismiss' ],
-			icon: 'close',
-			invisibleLabel: true,
-			label: mw.message( 'mwe-upwiz-mv-cta-dismiss' ).text(),
-			title: mw.message( 'mwe-upwiz-mv-cta-dismiss' ).text()
-		} ).on( 'click', function () {
-			$mvCtaDiv.remove();
-
-			// Set user preference to not show this again.
-			new mw.Api().saveOption( mvCtaDismissedKey, 1 );
-			mw.user.options.set( mvCtaDismissedKey, 1 );
-		} );
-		$mvCtaDismiss.$element.appendTo( $mvCtaDiv );
-
-		// Add icon div.
-		$mvCtaDiv.append( $( '<div>' ).addClass( 'mwe-upwiz-mv-cta-icon' ) );
-
-		// Add wrapper for everything to the right of the icon.
-		$mvCtaContent = $( '<div>' )
-			.addClass( 'mwe-upwiz-mv-cta-content' )
-			.appendTo( $mvCtaDiv );
-
-		// Add heading.
-		$mvCtaContent.append( $( '<h3>' )
-			.addClass( 'mwe-upwiz-mv-cta-heading' )
-			.msg( 'mwe-upwiz-mv-cta-heading' )
-		);
-
-		// Add description text.
-		$mvCtaContent.append( $( '<p>' )
-			.addClass( 'mwe-upwiz-mv-cta-description' )
-			.msg( 'mwe-upwiz-mv-cta-description' )
-		);
-
-		// Add wrapper checkbox and confirmation message.
-		$mvCtaCheckboxSection = $( '<div>' )
-			.addClass( 'mwe-upwiz-mv-cta-checkbox-section' )
-			.appendTo( $mvCtaContent );
-
-		// Add checkbox field layout.
-		mvCtaCheckboxField = new OO.ui.FieldLayout( this.mvCtaCheckbox, {
-			label: mw.message( 'mwe-upwiz-mv-cta-checkbox-label' ).text(),
-			align: 'inline'
-		} );
-		mvCtaCheckboxField.$element.appendTo( $mvCtaCheckboxSection );
-
-		// Add final CTA to go to the MV tool.
-		$mvCtaContent.append( $( '<p>' )
-			.addClass( 'mwe-upwiz-mv-cta-final-cta' )
-			.msg( 'mwe-upwiz-mv-cta-final-cta' )
-		);
-
-		// Add entire element above the main content of this step.
-		this.$div.find( '.mwe-upwiz-thanks-header' ).before( $mvCtaDiv );
-	};
-
-	/**
-	 * Handle user preference update when user checks box to opt into or out of
-	 * notifications for the machine vision tool.
-	 */
-	uw.ui.Thanks.prototype.onMvCtaCheckboxChange = function () {
-		var self = this,
-			selected = this.mvCtaCheckbox.isSelected(),
-			key = 'echo-subscriptions-web-machinevision',
-			value = selected ? 1 : 0,
-			message = selected ?
-				'mwe-upwiz-mv-cta-user-preference-set' :
-				'mwe-upwiz-mv-cta-user-preference-unset',
-			$mvCtaCheckboxSection = this.$div.find( '.mwe-upwiz-mv-cta-checkbox-section' );
-
-		// Remove existing confirmation message if there is one.
-		this.$div.find( '.mwe-upwiz-mv-cta-confirmation' ).remove();
-
-		// Disable the checkbox until API call finishes.
-		this.mvCtaCheckbox.setDisabled( true );
-
-		// Update the user preference in the database and in local storage.
-		// Only authenticated users can use UW, so no need to check isAnon().
-		new mw.Api().saveOption( key, value )
-			.done( function () {
-				// Show the appropriate message.
-				$mvCtaCheckboxSection.append( $( '<p>' )
-					.addClass( 'mwe-upwiz-mv-cta-confirmation' )
-					.msg( message )
-				);
-				mw.user.options.set( key, value );
-			} )
-			.fail( function () {
-				message = 'mwe-upwiz-mv-cta-user-preference-set-failed';
-				$mvCtaCheckboxSection.append( $( '<p>' )
-					.addClass( 'mwe-upwiz-mv-cta-confirmation' )
-					.msg( message )
-				);
-			} )
-			.always( function () {
-				self.mvCtaCheckbox.setDisabled( false );
-			} );
 	};
 
 	/**

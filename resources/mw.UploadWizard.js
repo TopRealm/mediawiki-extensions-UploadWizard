@@ -5,6 +5,10 @@
  */
 ( function ( uw ) {
 
+	/**
+	 * @param config
+	 * @class
+	 */
 	mw.UploadWizard = function ( config ) {
 		var maxSimPref;
 
@@ -21,11 +25,7 @@
 		maxSimPref = mw.user.options.get( 'upwiz_maxsimultaneous' );
 
 		if ( maxSimPref !== 'default' ) {
-			if ( maxSimPref > 0 ) {
-				config.maxSimultaneousConnections = maxSimPref;
-			} else {
-				config.maxSimultaneousConnections = 1;
-			}
+			config.maxSimultaneousConnections = Math.max( 1, maxSimPref );
 		}
 
 		this.maxSimultaneousConnections = config.maxSimultaneousConnections;
@@ -46,9 +46,35 @@
 		 * @param {string} selector
 		 */
 		createInterface: function ( selector ) {
+			var promise, self = this;
 			this.ui = new uw.ui.Wizard( selector );
 
-			this.initialiseSteps().then( function ( steps ) {
+			promise = this.initialiseSteps();
+
+			if (
+				this.config.wikibase.enabled &&
+				// .depicts is for backward compatibility
+				( this.config.wikibase.statements || this.config.wikibase.depicts )
+			) {
+				// mediainfo has a couple of widgets that we'll be using, but they're not
+				// necessarily a hard dependency for UploadWizard
+				// let's just attempt to load them - if not available we'll just do without
+				promise.then( () => {
+					// disable wikibase until its components are loaded - this is just a safeguard
+					// against the 'details' page being loaded with captions/depicts before
+					// the wikibase components have loaded
+					self.config.wikibase.enabled = false;
+					return mw.loader.using( [
+						'wikibase.mediainfo.statements',
+						'wikibase.datamodel',
+						'wikibase.mediainfo.base'
+					] ).then( () => {
+						self.config.wikibase.enabled = true;
+					} );
+				} );
+			}
+
+			promise.then( ( steps ) => {
 				// "select" the first step - highlight, make it visible, hide all others
 				steps.tutorial.load( [] );
 			} );
@@ -67,7 +93,10 @@
 			steps.file = new uw.controller.Upload( this.api, this.config );
 			steps.deeds = new uw.controller.Deed( this.api, this.config );
 			steps.details = new uw.controller.Details( this.api, this.config );
-			steps.thanks = new uw.controller.Thanks( this.api, this.config );
+			steps.thanks = new uw.controller.Thanks( this.api, Object.assign(
+				{ showInBreadcrumb: false },
+				this.config
+			) );
 
 			steps.tutorial.setNextStep( steps.file );
 
@@ -84,35 +113,7 @@
 			steps.thanks.setNextStep( steps.file );
 
 			return $.Deferred().resolve( steps ).promise()
-				.then( function ( steps ) {
-					if (
-						self.config.wikibase.enabled &&
-						// .depicts is for backward compatibility - this config
-						// var used to be called differently...
-						( self.config.wikibase.statements || self.config.wikibase.depicts )
-					) {
-						// mediainfo has a couple of widgets that we'll be using, but they're not
-						// necessarily a hard dependency for UploadWizard
-						// let's just attempt to load it - if it's not available, we just won't
-						// have that extra step then...
-						return mw.loader.using( [ 'wikibase', 'wikibase.mediainfo.statements' ] ).then(
-							function () {
-								// interject metadata step in between details & thanks
-								steps.metadata = new uw.controller.Metadata( self.api, self.config );
-
-								steps.details.setNextStep( steps.metadata );
-								// metadata has no "previous" step - the file
-								// has already been uploaded at this point
-								steps.metadata.setNextStep( steps.thanks );
-
-								return steps;
-							},
-							function () { return steps; /* just move on without metadata... */ }
-						);
-					}
-					return steps;
-				} )
-				.always( function ( steps ) {
+				.always( ( steps ) => {
 					self.steps = steps;
 					self.ui.initialiseSteps( steps );
 				} );
@@ -138,7 +139,7 @@
 			api.ajax = function ( parameters, ajaxOptions ) {
 				var original, override;
 
-				$.extend( parameters, {
+				Object.assign( parameters, {
 					errorformat: 'html',
 					errorlang: mw.config.get( 'wgUserLanguage' ),
 					errorsuselocal: 1,
@@ -151,7 +152,7 @@
 				// output is always, reliably, in the same format
 				override = original.then(
 					null, // done handler - doesn't need overriding
-					function ( code, result ) { // fail handler
+					( code, result ) => { // fail handler
 						var response = { errors: [ {
 							code: code,
 							html: result.textStatus || mw.message( 'api-clientside-error-invalidresponse' ).parse()
@@ -184,43 +185,6 @@
 
 			return api;
 		}
-	};
-
-	/**
-	 * Get the own work and third party licensing deeds if they are needed.
-	 *
-	 * @static
-	 * @since 1.2
-	 * @param {mw.UploadWizardUpload[]} uploads
-	 * @param {Object} config The UW config object.
-	 * @return {mw.deed.Abstract[]}
-	 */
-	mw.UploadWizard.getLicensingDeeds = function ( uploads, config ) {
-		var deed, api,
-			deeds = {},
-			doOwnWork = false,
-			doThirdParty = false;
-
-		api = this.prototype.getApi( { ajax: { timeout: 0 } } );
-
-		if ( config.licensing.ownWorkDefault === 'choice' ) {
-			doOwnWork = doThirdParty = true;
-		} else if ( config.licensing.ownWorkDefault === 'own' ) {
-			doOwnWork = true;
-		} else {
-			doThirdParty = true;
-		}
-
-		if ( doOwnWork ) {
-			deed = new uw.deed.OwnWork( config, uploads, api );
-			deeds[ deed.name ] = deed;
-		}
-		if ( doThirdParty ) {
-			deed = new uw.deed.ThirdParty( config, uploads, api );
-			deeds[ deed.name ] = deed;
-		}
-
-		return deeds;
 	};
 
 	/**

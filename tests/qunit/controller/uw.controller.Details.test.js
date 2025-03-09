@@ -18,23 +18,19 @@
 ( function ( uw ) {
 	QUnit.module( 'uw.controller.Details', QUnit.newMwEnvironment() );
 
-	function createTestUpload( sandbox, customDeedChooser, aborted ) {
+	function createTestUpload( sandbox, aborted ) {
 		var stubs = {
-			ucdc: sandbox.stub(),
 			getSerialized: sandbox.stub(),
 			setSerialized: sandbox.stub(),
 			attach: sandbox.stub()
 		};
 
 		return {
-			file: { fromUrl: false },
-
-			deedChooser: { deed: { name: customDeedChooser ? 'custom' : 'cc-by-sa-4.0' } },
+			deedChooser: { deed: { name: 'cc-by-sa-4.0' } },
 
 			on: function () {},
 
 			details: {
-				useCustomDeedChooser: stubs.ucdc,
 				getSerialized: stubs.getSerialized,
 				setSerialized: stubs.setSerialized,
 				attach: stubs.attach
@@ -46,7 +42,7 @@
 		};
 	}
 
-	QUnit.test( 'Constructor sanity test', function ( assert ) {
+	QUnit.test( 'Constructor sanity test', ( assert ) => {
 		var step = new uw.controller.Details( new mw.Api(), {
 			maxSimultaneousConnections: 1
 		} );
@@ -67,33 +63,29 @@
 
 		step.load( [ testUpload ] );
 
-		assert.strictEqual( testUpload.stubs.ucdc.called, false );
 		assert.strictEqual( step.createDetails.callCount, 1 );
 		assert.true( stepUiStub.called );
 
 		testUpload = createTestUpload( this.sandbox, true );
 		step.load( [ testUpload ] );
 
-		assert.true( testUpload.stubs.ucdc.called );
 		assert.strictEqual( step.createDetails.callCount, 2 );
 		assert.true( stepUiStub.called );
 
 		testUpload = createTestUpload( this.sandbox );
 		step.load( [ testUpload, createTestUpload( this.sandbox ) ] );
 
-		assert.strictEqual( testUpload.stubs.ucdc.called, false );
 		assert.strictEqual( step.createDetails.callCount, 4 );
 		assert.true( stepUiStub.called );
 
 		testUpload = createTestUpload( this.sandbox );
 		step.load( [ testUpload, createTestUpload( this.sandbox, false, true ) ] );
 
-		assert.strictEqual( testUpload.stubs.ucdc.called, false );
 		assert.strictEqual( step.createDetails.callCount, 6 );
 		assert.true( stepUiStub.called );
 	} );
 
-	QUnit.test( 'canTransition', function ( assert ) {
+	QUnit.test( 'canTransition', ( assert ) => {
 		var upload = {},
 			step = new uw.controller.Details( new mw.Api(), {
 				maxSimultaneousConnections: 1
@@ -134,7 +126,7 @@
 		];
 
 		step.transitionAll().done( donestub );
-		setTimeout( function () {
+		setTimeout( () => {
 			calls = [ tostub.getCall( 0 ), tostub.getCall( 1 ), tostub.getCall( 2 ) ];
 
 			assert.strictEqual( calls[ 0 ].args[ 0 ].id, 15 );
@@ -142,11 +134,11 @@
 
 			ds[ 0 ].resolve();
 			ds[ 1 ].resolve();
-			setTimeout( function () {
+			setTimeout( () => {
 				assert.strictEqual( donestub.called, false );
 
 				ds[ 2 ].resolve();
-				setTimeout( function () {
+				setTimeout( () => {
 					assert.true( donestub.called );
 
 					done();

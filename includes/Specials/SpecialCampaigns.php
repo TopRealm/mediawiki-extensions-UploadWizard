@@ -2,14 +2,19 @@
 
 namespace MediaWiki\Extension\UploadWizard\Specials;
 
-use Html;
 use MediaWiki\Extension\UploadWizard\Campaign;
-use SpecialPage;
+use MediaWiki\Html\Html;
+use MediaWiki\SpecialPage\SpecialPage;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 class SpecialCampaigns extends SpecialPage {
 
-	public function __construct() {
+	/** @var \Wikimedia\Rdbms\IDatabase|\Wikimedia\Rdbms\IReadableDatabase */
+	private $dbr;
+
+	public function __construct( IConnectionProvider $dbProvider ) {
 		parent::__construct( "Campaigns" );
+		$this->dbr = $dbProvider->getReplicaDatabase();
 	}
 
 	/**
@@ -17,27 +22,26 @@ class SpecialCampaigns extends SpecialPage {
 	 */
 	public function execute( $subPage ) {
 		$request = $this->getRequest();
-		$dbr = wfGetDB( DB_REPLICA );
 
 		$start = $request->getIntOrNull( 'start' );
 
 		$limit = 50;
 
-		$cond = [ 'campaign_enabled = 1' ];
+		$cond = [ 'campaign_enabled' => 1 ];
 
 		if ( $start !== null ) {
-			$cond[] = 'campaign_id > ' . $start;
+			$cond[] = $this->dbr->expr( 'campaign_id', '>', $start );
 		}
 
-		$res = $dbr->select(
-			'uw_campaigns',
-			[ 'campaign_id', 'campaign_name' ],
-			$cond,
-			__METHOD__,
-			[ 'LIMIT' => $limit + 1 ]
-		);
+		$res = $this->dbr->newSelectQueryBuilder()
+			->select( [ 'campaign_id', 'campaign_name' ] )
+			->from( 'uw_campaigns' )
+			->where( $cond )
+			->limit( $limit + 1 )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
-		$this->getOutput()->setPageTitle( $this->msg( 'mwe-upload-campaigns-list-title' ) );
+		$this->getOutput()->setPageTitleMsg( $this->msg( 'mwe-upload-campaigns-list-title' ) );
 		$this->getOutput()->addModuleStyles( [ 'ext.uploadWizard.uploadCampaign.display' ] );
 		$this->getOutput()->addHTML( '<dl>' );
 

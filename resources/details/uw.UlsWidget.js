@@ -3,15 +3,13 @@
 	/**
 	 * A ULS within a description field in UploadWizard's "Details" step form.
 	 *
-	 * @constructor
+	 * @class
 	 * @param {Object} [config]
-	 * @cfg {Object} [languages] Keys are 2-letter language codes, values are language autonyms
-	 * @cfg {Array} [classes] Classes to apply to the ULS container div
+	 * @param {Object} [config.languages] Keys are 2-letter language codes, values are language autonyms
+	 * @param {Array} [config.classes] Classes to apply to the ULS container div
 	 */
 	uw.UlsWidget = function UWUlsWidget( config ) {
-		var i;
-
-		uw.UlsWidget.parent.call( this );
+		uw.UlsWidget.super.call( this );
 
 		this.$element = $( '<div>' )
 			.append(

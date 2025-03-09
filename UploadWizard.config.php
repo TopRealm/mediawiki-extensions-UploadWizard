@@ -5,7 +5,11 @@
  * $wgUploadWizardConfig[ 'name'] =  'value';
  */
 
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 global $wgFileExtensions, $wgServer, $wgScriptPath, $wgAPIModules, $wgLang,
 	$wgCheckFileExtensions;
@@ -80,6 +84,16 @@ $uwLanguages = $cache->getWithSetCallback(
 	]
 );
 
+// List of languages CC licenses are available in, that can
+// form functional URLs ending in deed.<language code>. See T354225
+$uwCcAvailableLanguages = [
+	'an', 'ar', 'az', 'be', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el',
+	'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fr', 'fy', 'ga',
+	'gl', 'hi', 'hr', 'hu', 'id', 'is', 'it', 'ja', 'ko', 'lt',
+	'lv', 'ms', 'nl', 'no', 'pl', 'pt', 'pt-br', 'ro', 'ru', 'sk',
+	'sl', 'sr-latn', 'sv', 'tr', 'uk', 'zh-hans', 'zh-hant'
+];
+
 return [
 	// Upload wizard has an internal debug flag
 	'debug' => false,
@@ -137,8 +151,8 @@ return [
 		// wikitext to display above the UploadWizard UI.
 		'headerLabel' => '',
 
-		// wikitext to display on top of the "use" page.
-		// When not provided, the message mwe-upwiz-thanks-intro will be used.
+		// wikitext to display on top of the final page
+		// When not provided, the message mwe-upwiz-thanks-message will be used.
 		'thanksLabel' => '',
 
 		// checkbox label to display with each entry on the upload page to choose one image that
@@ -247,35 +261,131 @@ return [
 	// For those that aren't, there is a "templates" property.
 	'licenses' => [
 		'cc-by-sa-4.0' => [
-			'msg' => 'mwe-upwiz-license-cc-by-sa-4.0',
+			'msg' => 'mwe-upwiz-license-cc-by-sa-4.0-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-4.0-explain',
 			'icons' => [ 'cc-by', 'cc-sa' ],
 			'url' => '//creativecommons.org/licenses/by-sa/4.0/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'cc-by-sa-3.0' => [
-			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0',
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-explain',
 			'icons' => [ 'cc-by', 'cc-sa' ],
 			'url' => '//creativecommons.org/licenses/by-sa/3.0/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
-		'cc-by-sa-3.0-cn' => [
-			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-cn',
-			'templates' => [ 'cc-by-sa-3.0-cn' ],
+		'cc-by-sa-3.0-gfdl' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-gfdl-text',
+			'templates' => [ 'GFDL', 'cc-by-sa-3.0' ],
+			'icons' => [ 'cc-by', 'cc-sa' ]
+		],
+		'cc-by-sa-3.0-at' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-at-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-at-explain',
+			'templates' => [ 'cc-by-sa-3.0-at' ],
 			'icons' => [ 'cc-by', 'cc-sa' ],
-			'url' => '//creativecommons.org/licenses/by-sa/3.0/cn/',
-			'languageCodePrefix' => 'deed.'
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/at/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-de' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-de-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-de-explain',
+			'templates' => [ 'cc-by-sa-3.0-de' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/de/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-ee' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-ee-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-ee-explain',
+			'templates' => [ 'cc-by-sa-3.0-ee' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/ee/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-es' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-es-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-es-explain',
+			'templates' => [ 'cc-by-sa-3.0-es' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/es/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-hr' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-hr-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-hr-explain',
+			'templates' => [ 'cc-by-sa-3.0-hr' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/hr/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-lu' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-lu-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-lu-explain',
+			'templates' => [ 'cc-by-sa-3.0-lu' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/lu/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-nl' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-nl-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-nl-explain',
+			'templates' => [ 'cc-by-sa-3.0-nl' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/nl/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-no' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-no-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-no-explain',
+			'templates' => [ 'cc-by-sa-3.0-no' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/no/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-pl' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-pl-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-pl-explain',
+			'templates' => [ 'cc-by-sa-3.0-pl' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/pl/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-ro' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-ro-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-ro-explain',
+			'templates' => [ 'cc-by-sa-3.0-ro' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/ro/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'cc-by-4.0' => [
-			'msg' => 'mwe-upwiz-license-cc-by-4.0',
+			'msg' => 'mwe-upwiz-license-cc-by-4.0-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-4.0-explain',
 			'icons' => [ 'cc-by' ],
 			'url' => '//creativecommons.org/licenses/by/4.0/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'cc-by-3.0' => [
-			'msg' => 'mwe-upwiz-license-cc-by-3.0',
+			'msg' => 'mwe-upwiz-license-cc-by-3.0-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-3.0-explain',
 			'icons' => [ 'cc-by' ],
 			'url' => '//creativecommons.org/licenses/by/3.0/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'cc-by-nc-sa-4.0' => [
 			'msg' => 'mwe-upwiz-license-cc-by-nc-sa-4.0',
@@ -338,21 +448,24 @@ return [
 			'languageCodePrefix' => 'deed.'
 		],
 		'cc-zero' => [
-			'msg' => 'mwe-upwiz-license-cc-zero',
+			'msg' => 'mwe-upwiz-license-cc-zero-text',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-zero-explain',
 			'icons' => [ 'cc-zero' ],
 			'url' => '//creativecommons.org/publicdomain/zero/1.0/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'own-pd' => [
-			'msg' => 'mwe-upwiz-license-own-pd',
+			'msg' => 'mwe-upwiz-license-own-pd-text',
 			'icons' => [ 'cc-zero' ],
 			'templates' => [ 'cc-zero' ]
 		],
 		'cc-by-sa-2.5' => [
-			'msg' => 'mwe-upwiz-license-cc-by-sa-2.5',
+			'msg' => 'mwe-upwiz-license-cc-by-sa-2.5-text',
 			'icons' => [ 'cc-by', 'cc-sa' ],
 			'url' => '//creativecommons.org/licenses/by-sa/2.5/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'cc-by-sa-2.5-cn' => [
 			'msg' => 'mwe-upwiz-license-cc-by-sa-2.5-cn',
@@ -361,10 +474,11 @@ return [
 			'languageCodePrefix' => 'deed.'
 		],
 		'cc-by-2.5' => [
-			'msg' => 'mwe-upwiz-license-cc-by-2.5',
+			'msg' => 'mwe-upwiz-license-cc-by-2.5-text',
 			'icons' => [ 'cc-by' ],
 			'url' => '//creativecommons.org/licenses/by/2.5/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'cc-by-2.5-cn' => [
 			'msg' => 'mwe-upwiz-license-cc-by-2.5-cn',
@@ -373,25 +487,39 @@ return [
 			'languageCodePrefix' => 'deed.'
 		],
 		'cc-by-sa-2.0' => [
-			'msg' => 'mwe-upwiz-license-cc-by-sa-2.0',
+			'msg' => 'mwe-upwiz-license-cc-by-sa-2.0-text',
 			'icons' => [ 'cc-by', 'cc-sa' ],
 			'url' => '//creativecommons.org/licenses/by-sa/2.0/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'cc-by-2.0' => [
-			'msg' => 'mwe-upwiz-license-cc-by-2.0',
+			'msg' => 'mwe-upwiz-license-cc-by-2.0-text',
 			'icons' => [ 'cc-by' ],
 			'url' => '//creativecommons.org/licenses/by/2.0/',
-			'languageCodePrefix' => 'deed.'
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
 		],
 		'fal' => [
 			'msg' => 'mwe-upwiz-license-fal',
 			'templates' => [ 'FAL' ],
 			'url' => '//artlibre.org/licence/lal/en/'
 		],
+		'pd-us-generic' => [
+			'msg' => 'mwe-upwiz-license-pd-us-generic',
+			'templates' => [ 'PD-US' ]
+		],
 		'pd-us' => [
 			'msg' => 'mwe-upwiz-license-pd-us',
 			'templates' => [ 'PD-US-expired' ]
+		],
+		'pd-old-70-expired' => [
+			'msg' => 'mwe-upwiz-license-pd-old-70-1923',
+			'templates' => [ 'PD-old-70-expired' ],
+		],
+		'pd-old-70' => [
+			'msg' => 'mwe-upwiz-license-pd-old-70',
+			'templates' => [ 'PD-old-70' ],
 		],
 		'pd-usgov' => [
 			'msg' => 'mwe-upwiz-license-pd-usgov',
@@ -471,12 +599,13 @@ return [
 			'templates' => [ 'subst:uwl' ]
 		],
 		'custom' => [
-			'msg' => 'mwe-upwiz-license-custom',
+			'msg' => 'mwe-upwiz-license-custom-text',
 			'templates' => [ 'subst:Custom license marker added by UW' ],
 			'url' => wfMessage( 'mwe-upwiz-license-custom-url' )->parse()
 		],
 		'generic' => [
 			'msg' => 'mwe-upwiz-license-generic',
+			'msgExplain' => 'mwe-upwiz-source-ownwork-generic-explain',
 			'templates' => [ 'Generic' ]
 		],
 		'pd-prc-exempt' => [
@@ -584,7 +713,6 @@ return [
 		// checkbox selection of all licenses
 		'thirdParty' => [
 			'type' => 'or',
-			'defaults' => 'cc-by-sa-4.0',
 			'licenseGroups' => [
 				[
 					'head' => 'mwe-upwiz-license-cc-head',
@@ -595,7 +723,7 @@ return [
 						'cc-by-sa-3.0-cn',
 						'cc-by-sa-2.5',
 						'cc-by-sa-2.5-cn',
-						'cc-by-sa-2.0',	
+						'cc-by-sa-2.0',
 						'cc-by-4.0',
 						'cc-by-3.0',
 						'cc-by-3.0-cn',
@@ -611,7 +739,7 @@ return [
 			        	'cc-by-nc-nd-3.0-cn',
 					]
 				],
-				
+
 				[
 					'head' => 'mwe-upwiz-license-other-free-head',
 					'subhead' => 'mwe-upwiz-license-other-free-subhead',
@@ -623,7 +751,7 @@ return [
 						'lgplv3',
 						'lgplv2.1',
 						'lgplv2.1-or-later-version',
-						'lgplv2',				
+						'lgplv2',
 						'gfdl',
 						'gfdl+cc-by-sa-3.0',
 						'odbl',
@@ -667,8 +795,9 @@ return [
 					]
 				],
 				[
-					'head' => 'mwe-upwiz-license-custom-head',
+					'head' => 'mwe-upwiz-license-other-head',
 					'special' => 'custom',
+					'defaults' => [ 'custom' ],
 					'licenses' => [ 'custom' ],
 				],
 			]
@@ -692,16 +821,22 @@ return [
 	// Min author string length
 	'minAuthorLength' => 1,
 
+	// Max AI tool string length
+	'maxAiInputLength' => 10000,
+
+	// Min AI tool string length
+	'minAiInputLength' => 5,
+
 	// Max source string length
 	'maxSourceLength' => 10000,
 
 	// Min source string length
 	'minSourceLength' => 5,
 
-	// Max file title string length
+	// Max file title string length (in bytes)
 	'maxTitleLength' => 240,
 
-	// Min file title string length
+	// Min file title string length (in characters)
 	'minTitleLength' => 5,
 
 	// Max file caption length
@@ -819,10 +954,52 @@ return [
 	// enable structured data to go into a wikibase repository
 	'wikibase' => [
 		'enabled' => false,
-		'captions' => false,
-		'statements' => false,
-		'nonDefaultStatements' => false,
+		'captions' => true,
+		'statements' => true,
 		// url to wikibase repo API
 		'api' => $wgScriptPath . '/api.php',
+		// property ID for the date statement
+		'properties' => [
+			'date' => 'P571',
+			'source' => 'P7482',
+			'operator' => 'P137',
+			'described_at_url' => 'P973',
+		],
+		'items' => [
+			'file_available_on_the_internet' => 'Q74228490',
+		],
+	],
+
+	// extra templates that get written into the wikitext by checking a checkbox
+	'templateOptions' => [
+		'thirdparty' => [
+			'aiGenerated' => [
+				'template' => '{{PD-algorithm}}',
+				'label' => 'mwe-upwiz-source-ai'
+			],
+			'authorUnknown' => [
+				'template' => '',
+				'label' => 'mwe-upwiz-author-unknown'
+			]
+		]
+	],
+
+	// config for mapping source strings to wikidata items
+	'sourceStringToWikidataIdMapping' => [
+		'facebook' => 'Q355',
+		'fbcdn' => 'Q355',
+		'google' => 'Q95',
+		'instagram' => 'Q209330',
+		'cdninstagram' => 'Q209330',
+		'pinterest' => 'Q255381',
+		'youtube' => 'Q866',
+		'gettyimages' => 'Q1520122',
+		'reddit' => 'Q1136',
+		'shutterstock' => 'Q3482689',
+		'alamy' => 'Q263465',
+		'istockphoto' => 'Q225613',
+		'tiktok' => 'Q48938223',
+		'amazon' => 'Q3884',
+		'media-amazon' => 'Q3884',
 	],
 ];

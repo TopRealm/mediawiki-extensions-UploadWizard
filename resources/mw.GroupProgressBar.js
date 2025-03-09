@@ -3,8 +3,7 @@
 	/**
 	 * This is a progress bar for monitoring multiple objects, giving summary view
 	 *
-	 * @class mw.GroupProgressbar
-	 * @constructor
+	 * @class
 	 * @param {string} selector
 	 * @param {mw.UploadWizardUpload[]} uploads
 	 * @param {string[]} successStates
@@ -68,11 +67,11 @@
 					errorStateCount = 0,
 					hasData = false;
 
-				bar.uploads.forEach( function ( upload ) {
+				bar.uploads.forEach( ( upload ) => {
 					totalWeight += upload[ bar.weightProperty ];
 				} );
 
-				bar.uploads.forEach( function ( upload ) {
+				bar.uploads.forEach( ( upload ) => {
 					if ( upload.state === 'aborted' ) {
 						return;
 					}
@@ -106,7 +105,7 @@
 				} else {
 					bar.showProgress( 1.0 );
 					bar.finished = true;
-					setTimeout( function () {
+					setTimeout( () => {
 						bar.hideBar();
 					}, 500 );
 				}
@@ -185,17 +184,19 @@
 		 * @param {number} completed The number of items that have done whatever has been done e.g. in "uploaded 2 of 5", this is the 2
 		 */
 		showCount: function ( completed ) {
+			var formattedCompleted = mw.language.convertNumber( completed );
 			var total = this.uploads.length - this.countRemoved();
+			var formattedTotal = mw.language.convertNumber( total );
 			this.$selector
 				.find( '.mwe-upwiz-count' )
 				// Hide if there are no uploads, show otherwise
 				.toggle( total !== 0 )
-				.html( mw.message( 'mwe-upwiz-upload-count', completed, total ).escaped() );
+				.text( mw.msg( 'mwe-upwiz-upload-count', formattedCompleted, formattedTotal ) );
 		},
 
 		countRemoved: function () {
 			var count = 0;
-			this.uploads.forEach( function ( upload ) {
+			this.uploads.forEach( ( upload ) => {
 				if ( !upload || upload.state === 'aborted' ) {
 					count += 1;
 				}

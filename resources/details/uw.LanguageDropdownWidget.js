@@ -3,13 +3,13 @@
 	/**
 	 * A language dropdown within a description field in UploadWizard's "Details" step form.
 	 *
-	 * @constructor
+	 * @class
 	 * @param {Object} [config]
 	 */
 	uw.LanguageDropdownWidget = function UWLanguageDropdownWidget( config ) {
 		config = config || {};
 
-		uw.LanguageDropdownWidget.parent.call( this );
+		uw.LanguageDropdownWidget.super.call( this );
 
 		this.languageDropdown = new OO.ui.DropdownWidget( {
 			menu: { items: this.getLanguageMenuOptionWidgets( config.languages ) },
@@ -30,9 +30,7 @@
 
 		// remove all items except the one currently selected (don't want
 		// to trigger another select by removing it)
-		menu.removeItems( currentMenuItems.filter( function ( item ) {
-			return !item.isSelected();
-		} ) );
+		menu.removeItems( currentMenuItems.filter( ( item ) => !item.isSelected() ) );
 
 		// and add the rest of the languages back in there
 		delete languages[ currentValue ];
@@ -68,12 +66,10 @@
 	 * @return {OO.ui.MenuOptionWidget[]}
 	 */
 	uw.LanguageDropdownWidget.prototype.getLanguageMenuOptionWidgets = function ( languages ) {
-		return Object.keys( languages ).map( function ( code ) {
-			return new OO.ui.MenuOptionWidget( {
-				data: code,
-				label: languages[ code ]
-			} );
-		} );
+		return Object.keys( languages ).map( ( code ) => new OO.ui.MenuOptionWidget( {
+			data: code,
+			label: languages[ code ]
+		} ) );
 	};
 
 }( mw.uploadWizard ) );

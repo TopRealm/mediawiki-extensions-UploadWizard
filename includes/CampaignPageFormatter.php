@@ -11,13 +11,13 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use Html;
-use IContextSource;
 use ImageGalleryBase;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Skin\SkinComponentUtils;
 use OOUI\ButtonWidget;
-use RequestContext;
-use Skin;
 
 /**
  * Helper class to produce formatted HTML output for Campaigns
@@ -37,6 +37,9 @@ class CampaignPageFormatter {
 		}
 	}
 
+	/**
+	 * @return bool
+	 */
 	private function isCampaignExtensionEnabled() {
 		$rl = MediaWikiServices::getInstance()->getResourceLoader();
 		// FIXME: This string exists nowhere in Wikimedia Gerrit outside this file.
@@ -50,12 +53,6 @@ class CampaignPageFormatter {
 		$campaignDescription = $config['description'] ?? '';
 		$campaignViewMoreLink = $this->campaign->getTrackingCategory()->getFullURL();
 
-		$gallery = ImageGalleryBase::factory( 'packed-hover' );
-		$gallery->setContext( $this->context );
-		$gallery->setWidths( '180' );
-		$gallery->setHeights( '180' );
-		$gallery->setShowBytes( false );
-
 		$this->context->getOutput()->setCdnMaxage(
 			Config::getSetting( 'campaignSquidMaxAge' )
 		);
@@ -65,21 +62,21 @@ class CampaignPageFormatter {
 
 		$images = $this->campaign->getUploadedMedia();
 
-		if ( !$this->context->getUser()->isRegistered() ) {
+		if ( !$this->context->getUser()->isNamed() ) {
 			$urlParams = [ 'returnto' => $this->campaign->getTitle()->getPrefixedText() ];
 
 			if ( $this->isCampaignExtensionEnabled() ) {
 				$campaignTemplate = Config::getSetting( 'campaignCTACampaignTemplate' );
 				$urlParams['campaign'] = str_replace( '$1', $this->campaign->getName(), $campaignTemplate );
 			}
-			$createAccountUrl = Skin::makeSpecialUrlSubpage( 'Userlogin', 'signup', $urlParams );
+			$createAccountUrl = SkinComponentUtils::makeSpecialUrlSubpage( 'Userlogin', 'signup', $urlParams );
 			$uploadLink = new ButtonWidget( [
 				'label' => wfMessage( 'mwe-upwiz-campaign-create-account-button' )->text(),
 				'flags' => [ 'progressive', 'primary' ],
 				'href' => $createAccountUrl
 			] );
 		} else {
-			$uploadUrl = Skin::makeSpecialUrl(
+			$uploadUrl = SkinComponentUtils::makeSpecialUrl(
 				'UploadWizard', [ 'campaign' => $this->campaign->getName() ]
 			);
 			$uploadLink = new ButtonWidget( [
@@ -96,6 +93,9 @@ class CampaignPageFormatter {
 				wfMessage( 'mwe-upwiz-campaign-no-uploads-yet' )->plain()
 			);
 		} else {
+			$gallery = ImageGalleryBase::factory( 'packed-hover', $this->context );
+			$gallery->setShowBytes( false );
+
 			foreach ( $images as $image ) {
 				$gallery->add( $image );
 			}

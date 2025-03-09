@@ -19,9 +19,8 @@
 	/**
 	 * Represents the UI for the wizard.
 	 *
-	 * @class uw.ui.Wizard
-	 * @mixins OO.EventEmitter
-	 * @constructor
+	 * @class
+	 * @mixes OO.EventEmitter
 	 * @param {string} selector Where to put all of the wizard interface.
 	 */
 	uw.ui.Wizard = function UWUIWizard( selector ) {
@@ -133,22 +132,29 @@
 				.attr( 'id', 'mwe-upwiz-steps' )
 				.addClass( 'ui-helper-clearfix' )
 				.insertBefore( '#mwe-upwiz-content' ),
-			sortedSteps = this.sortSteps( Object.keys( steps ).map( function ( key ) {
-				return steps[ key ];
-			} ) );
+			sortedSteps = this.sortSteps( Object.keys( steps ).map( ( key ) => steps[ key ] ) );
 
-		sortedSteps.forEach( function ( step ) {
+		sortedSteps.forEach( ( step ) => {
 			var $arrow = $( '<li>' )
 				.attr( 'id', 'mwe-upwiz-step-' + step.stepName )
 				.append(
 					$( '<div>' ).text( mw.message( 'mwe-upwiz-step-' + step.stepName ).text() )
 				);
-			$steps.append( $arrow );
+			if ( step.showInBreadcrumb ) {
+				$steps.append( $arrow );
+			}
 
 			// once a (new) step loads, highlight it
-			step.on( 'load', function ( $arrow ) {
-				$steps.arrowStepsHighlight( $arrow );
-			}.bind( step, $arrow ) );
+			step.on( 'load', ( ( $arrow ) => {
+				if ( step.showInBreadcrumb ) {
+					$steps.arrowStepsHighlight( $arrow );
+				}
+				$steps.show();
+			} ).bind( step, $arrow ) );
+
+			step.on( 'finished', () => {
+				$steps.hide();
+			} );
 		} );
 
 		$steps.arrowSteps();

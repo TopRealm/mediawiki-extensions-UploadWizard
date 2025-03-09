@@ -4,14 +4,17 @@
 	 * A set of location fields in UploadWizard's "Details" step form.
 	 *
 	 * @extends uw.DetailsWidget
-	 * @constructor
+	 * @class
 	 * @param {Object} [config] Configuration options
-	 * @cfg {boolean} [showHeading=true] Whether to show the 'heading' field
+	 * @param {string} [config.latitudeKey]
+	 * @param {string} [config.longitudeKey]
+	 * @param {string} [config.headingKey]
+	 * @param {string} [config.templateName]
 	 */
 	uw.LocationDetailsWidget = function UWLocationDetailsWidget( config ) {
 		this.config = config || {};
 
-		uw.LocationDetailsWidget.parent.call( this );
+		uw.LocationDetailsWidget.super.call( this );
 
 		this.$element.addClass( 'mwe-upwiz-locationDetailsWidget' );
 
@@ -40,7 +43,7 @@
 			} ).$element
 		);
 
-		if ( this.config.showHeading ) {
+		if ( this.config.headingKey ) {
 			this.$element.append(
 				new OO.ui.FieldLayout( this.headingInput, {
 					align: 'top',
@@ -61,10 +64,10 @@
 		this.connect( this, { change: 'onChange' } );
 
 		this.mapButton.toggle( false );
-		mw.loader.using( [ 'ext.kartographer.box', 'ext.kartographer.editing' ] ).done( function () {
+		mw.loader.using( [ 'ext.kartographer.box', 'ext.kartographer.editing' ] ).done( () => {
 			// Kartographer is installed and we'll be able to show the map. Display the button.
 			this.mapButton.toggle( true );
-		}.bind( this ) );
+		} );
 	};
 
 	OO.inheritClass( uw.LocationDetailsWidget, uw.DetailsWidget );
@@ -74,7 +77,7 @@
 	 */
 	uw.LocationDetailsWidget.prototype.onChange = function () {
 		var widget = this;
-		this.getErrors().done( function ( errors ) {
+		this.getErrors().done( ( errors ) => {
 			widget.mapButton.setDisabled( !( errors.length === 0 && widget.getWikiText() !== '' ) );
 		} );
 	};
@@ -172,7 +175,8 @@
 		// coordinates that were derived from the input are 0, without a 0 even
 		// being present in the input
 		if ( latNum !== 0 || latInput.indexOf( '0' ) >= 0 || lonNum !== 0 || lonInput.indexOf( '0' ) >= 0 ) {
-			locationParts = [ '{{Location', latNum, lonNum ];
+			// {{Location}} or {{Object location}}
+			locationParts = [ '{{' + this.config.templateName, latNum, lonNum ];
 
 			if ( !isNaN( headNum ) ) {
 				locationParts.push( 'heading:' + headNum );
@@ -190,9 +194,9 @@
 	 */
 	uw.LocationDetailsWidget.prototype.getSerialized = function () {
 		return {
-			latitude: this.latitudeInput.getValue(),
-			longitude: this.longitudeInput.getValue(),
-			heading: this.headingInput.getValue()
+			[ this.config.latitudeKey ]: this.latitudeInput.getValue(),
+			[ this.config.longitudeKey ]: this.longitudeInput.getValue(),
+			[ this.config.headingKey ]: this.headingInput.getValue()
 		};
 	};
 
@@ -204,7 +208,11 @@
 	 * @param {string} serialized.heading Heading value
 	 */
 	uw.LocationDetailsWidget.prototype.setSerialized = function ( serialized ) {
-		this.setupInputs( serialized.latitude, serialized.longitude, serialized.heading );
+		this.setupInputs(
+			serialized[ this.config.latitudeKey ],
+			serialized[ this.config.longitudeKey ],
+			serialized[ this.config.headingKey ]
+		);
 	};
 
 	/**

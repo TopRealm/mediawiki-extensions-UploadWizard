@@ -3,11 +3,10 @@
 namespace MediaWiki\Extension\UploadWizard;
 
 use File;
-use Html;
-use Language;
 use MediaTransformOutput;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
-use Title;
+use MediaWiki\Title\Title;
 
 /**
  * Class to encapsulate all the html generation associated with the UploadWizard tutorial.
@@ -85,7 +84,7 @@ class Tutorial {
 				$errorMsg->params( Language::fetchLanguageName( $langCode, $wgLang->getCode() ) );
 			}
 			$errorHtml = Html::errorBox(
-				$errorMsg->text()
+				$errorMsg->parse()
 			);
 		}
 
@@ -117,9 +116,10 @@ class Tutorial {
 	 */
 	public static function getImageHtml( MediaTransformOutput $thumb, $tutorial ) {
 		$helpDeskUrl = wfMessage( 'mwe-upwiz-help-desk-url' )->text();
+		$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
 
 		// Per convention, we may be either using an absolute URL or a wiki page title in this UI message
-		if ( preg_match( '/^(?:' . wfUrlProtocols() . ')/', $helpDeskUrl ) ) {
+		if ( preg_match( '/^(?:' . $urlUtils->validProtocols() . ')/', $helpDeskUrl ) ) {
 			$helpDeskHref = $helpDeskUrl;
 		} else {
 			$helpDeskTitle = Title::newFromText( $helpDeskUrl );

@@ -2,20 +2,26 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use Article;
-use Content;
-use EditPage;
-use IContextSource;
-use JsonSchemaException;
-use LinksUpdate;
 use ManualLogEntry;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\Hook\ContentModelCanBeUsedOnHook;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
+use MediaWiki\EditPage\EditPage;
+use MediaWiki\Extension\EventLogging\Libs\JsonSchemaValidation\JsonSchemaException;
+use MediaWiki\Hook\EditFilterMergedContentHook;
+use MediaWiki\Hook\LinksUpdateCompleteHook;
+use MediaWiki\Hook\PageMoveCompleteHook;
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Page\Hook\ArticleDeleteCompleteHook;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Status\Status;
 use MediaWiki\Storage\EditResult;
+use MediaWiki\Storage\Hook\PageSaveCompleteHook;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
-use Status;
-use Title;
-use User;
+use Wikimedia\Rdbms\IConnectionProvider;
 use WikiPage;
 
 /**
@@ -28,7 +34,24 @@ use WikiPage;
  * @author Ori Livneh <ori@wikimedia.org>
  */
 
-class CampaignHooks {
+class CampaignHooks implements
+	ContentModelCanBeUsedOnHook,
+	EditFilterMergedContentHook,
+	PageSaveCompleteHook,
+	ArticleDeleteCompleteHook,
+	PageMoveCompleteHook,
+	LinksUpdateCompleteHook
+{
+
+	/** @var IConnectionProvider */
+	private $dbLoadBalancerFactory;
+
+	/**
+	 * @param IConnectionProvider $dbLoadBalancerFactory
+	 */
+	public function __construct( IConnectionProvider $dbLoadBalancerFactory ) {
+		$this->dbLoadBalancerFactory = $dbLoadBalancerFactory;
+	}
 
 	/**
 	 * 'Campaign' content model must be used in, and only in, the 'Campaign' namespace.
@@ -38,7 +61,7 @@ class CampaignHooks {
 	 * @param bool &$ok
 	 * @return bool
 	 */
-	public static function onContentModelCanBeUsedOn( $contentModel, Title $title, &$ok ) {
+	public function onContentModelCanBeUsedOn( $contentModel, $title, &$ok ) {
 		$isCampaignModel = $contentModel === 'Campaign';
 		$isCampaignNamespace = $title->inNamespace( NS_CAMPAIGN );
 		if ( $isCampaignModel !== $isCampaignNamespace ) {
@@ -60,45 +83,42 @@ class CampaignHooks {
 	 * @param int $flags
 	 * @param RevisionRecord $revisionRecord
 	 * @param EditResult $editResult
-	 *
-	 * @return bool
 	 */
-	public static function onPageSaveComplete(
-		WikiPage $wikiPage,
-		UserIdentity $userIdentity,
-		string $summary,
-		int $flags,
-		RevisionRecord $revisionRecord,
-		EditResult $editResult
+	public function onPageSaveComplete(
+		$wikiPage,
+		$userIdentity,
+		$summary,
+		$flags,
+		$revisionRecord,
+		$editResult
 	) {
 		$content = $wikiPage->getContent();
 		if ( !$content instanceof CampaignContent ) {
-			return true;
+			return;
 		}
 
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = $this->dbLoadBalancerFactory->getPrimaryDatabase();
 
 		$campaignData = $content->getJsonData();
 		$insertData = [
 			'campaign_enabled' => $campaignData !== null && $campaignData['enabled'] ? 1 : 0
 		];
-		$success = $dbw->upsert(
-			'uw_campaigns',
-			array_merge(
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'uw_campaigns' )
+			->row( array_merge(
 				[ 'campaign_name' => $wikiPage->getTitle()->getDBkey() ],
 				$insertData
-			),
-			'campaign_name',
-			$insertData,
-			__METHOD__
-		);
+			) )
+			->onDuplicateKeyUpdate()
+			->uniqueIndexFields( 'campaign_name' )
+			->set( $insertData )
+			->caller( __METHOD__ )
+			->execute();
 
 		$campaign = new Campaign( $wikiPage->getTitle(), $content->getJsonData() );
 		$dbw->onTransactionPreCommitOrIdle( static function () use ( $campaign ) {
 			$campaign->invalidateCache();
 		}, __METHOD__ );
-
-		return $success;
 	}
 
 	/**
@@ -107,48 +127,44 @@ class CampaignHooks {
 	 * PageContentSaveComplete hook.
 	 *
 	 * This is usually run via the Job Queue mechanism.
-	 * @param LinksUpdate &$linksupdate
-	 * @return bool
+	 * @param LinksUpdate $linksupdate
+	 * @param mixed $ticket
 	 */
-	public static function onLinksUpdateComplete( LinksUpdate &$linksupdate ) {
+	public function onLinksUpdateComplete( $linksupdate, $ticket ) {
 		if ( !$linksupdate->getTitle()->inNamespace( NS_CAMPAIGN ) ) {
-			return true;
+			return;
 		}
 
 		$campaign = new Campaign( $linksupdate->getTitle() );
 		$campaign->invalidateCache();
-
-		return true;
 	}
 
 	/**
 	 * Deletes entries from uc_campaigns table when a Campaign is deleted
-	 * @param Article $article
+	 * @param WikiPage $article
 	 * @param User $user
 	 * @param string $reason
 	 * @param int $id
 	 * @param Content $content
 	 * @param ManualLogEntry $logEntry
-	 * @return bool
+	 * @param int $archivedRevisionCount
 	 */
-	public static function onArticleDeleteComplete(
-		$article, $user, $reason, $id, $content, $logEntry
+	public function onArticleDeleteComplete(
+		$article, $user, $reason, $id, $content, $logEntry, $archivedRevisionCount
 	) {
 		if ( !$article->getTitle()->inNamespace( NS_CAMPAIGN ) ) {
-			return true;
+			return;
 		}
 
 		$fname = __METHOD__;
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = $this->dbLoadBalancerFactory->getPrimaryDatabase();
 		$dbw->onTransactionPreCommitOrIdle( static function () use ( $dbw, $article, $fname ) {
-			$dbw->delete(
-				'uw_campaigns',
-				[ 'campaign_name' => $article->getTitle()->getDBkey() ],
-				$fname
-			);
+			$dbw->newDeleteQueryBuilder()
+				->deleteFrom( 'uw_campaigns' )
+				->where( [ 'campaign_name' => $article->getTitle()->getDBkey() ] )
+				->caller( $fname )
+				->execute();
 		}, $fname );
-
-		return true;
 	}
 
 	/**
@@ -161,40 +177,26 @@ class CampaignHooks {
 	 * @param string $reason
 	 * @param RevisionRecord $revisionRecord
 	 */
-	public static function onPageMoveComplete(
-		LinkTarget $oldTitle,
-		LinkTarget $newTitle,
-		UserIdentity $user,
-		int $pageid,
-		int $redirid,
-		string $reason,
-		RevisionRecord $revisionRecord
+	public function onPageMoveComplete(
+		$oldTitle,
+		$newTitle,
+		$user,
+		$pageid,
+		$redirid,
+		$reason,
+		$revisionRecord
 	): void {
 		if ( !$oldTitle->inNamespace( NS_CAMPAIGN ) ) {
 			return;
 		}
 
-		$dbw = wfGetDB( DB_PRIMARY );
-		$dbw->update(
-			'uw_campaigns',
-			[ 'campaign_name' => $newTitle->getDBkey() ],
-			[ 'campaign_name' => $oldTitle->getDBkey() ],
-			__METHOD__
-		);
-	}
-
-	/**
-	 * Declares JSON as the code editor language for Campaign: pages.
-	 * This hook only runs if the CodeEditor extension is enabled.
-	 * @param Title $title
-	 * @param string &$lang Page language.
-	 * @return bool
-	 */
-	public static function onCodeEditorGetPageLanguage( $title, &$lang ) {
-		if ( $title->inNamespace( NS_CAMPAIGN ) ) {
-			$lang = 'json';
-		}
-		return true;
+		$dbw = $this->dbLoadBalancerFactory->getPrimaryDatabase();
+		$dbw->newUpdateQueryBuilder()
+			->update( 'uw_campaigns' )
+			->set( [ 'campaign_name' => $newTitle->getDBkey() ] )
+			->where( [ 'campaign_name' => $oldTitle->getDBkey() ] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 	/**
@@ -208,8 +210,8 @@ class CampaignHooks {
 	 * @param bool $minoredit
 	 * @return bool
 	 */
-	public static function onEditFilterMergedContent( $context, $content, $status, $summary,
-		$user, $minoredit
+	public function onEditFilterMergedContent( IContextSource $context, Content $content, Status $status, $summary,
+		User $user, $minoredit
 	) {
 		if ( !$context->getTitle()->inNamespace( NS_CAMPAIGN )
 			|| !$content instanceof CampaignContent

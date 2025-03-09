@@ -48,9 +48,11 @@
 			return;
 		}
 
-		uploads.forEach( function ( upload ) {
+		uploads.forEach( ( upload ) => {
 			thanks.ui.addUpload( upload );
 		} );
+
+		this.emit( 'finished' );
 	};
 
 	uw.controller.Thanks.prototype.moveNext = function () {

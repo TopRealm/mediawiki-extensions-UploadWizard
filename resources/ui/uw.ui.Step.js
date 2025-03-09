@@ -19,9 +19,8 @@
 	/**
 	 * Represents a generic UI for a step.
 	 *
-	 * @class uw.ui.Step
-	 * @mixins OO.EventEmitter
-	 * @constructor
+	 * @class
+	 * @mixes OO.EventEmitter
 	 * @param {string} name The name of this step
 	 */
 	uw.ui.Step = function UWUIStep( name ) {
@@ -43,6 +42,10 @@
 		// set in the controller, otherwise there's nowhere to go...
 		this.nextButtonPromise = $.Deferred();
 		this.previousButtonPromise = $.Deferred();
+
+		this.$errorCount = $( '<div>' )
+			.attr( 'id', 'mwe-upwiz-details-error-count' );
+		this.$buttons.append( this.$errorCount );
 	};
 
 	OO.mixinClass( uw.ui.Step, OO.EventEmitter );
@@ -95,11 +98,11 @@
 			classes: [ 'mwe-upwiz-button-next' ],
 			label: mw.message( 'mwe-upwiz-next' ).text(),
 			flags: [ 'progressive', 'primary' ]
-		} ).on( 'click', function () {
+		} ).on( 'click', () => {
 			ui.emit( 'next-step' );
 		} );
 
-		this.nextButtonPromise.done( function () {
+		this.nextButtonPromise.done( () => {
 			ui.$buttons.append( ui.nextButton.$element );
 		} );
 	};
@@ -113,12 +116,61 @@
 		this.previousButton = new OO.ui.ButtonWidget( {
 			classes: [ 'mwe-upwiz-button-previous' ],
 			label: mw.message( 'mwe-upwiz-previous' ).text()
-		} ).on( 'click', function () {
+		} ).on( 'click', () => {
 			ui.emit( 'previous-step' );
 		} );
 
-		this.previousButtonPromise.done( function () {
+		this.previousButtonPromise.done( () => {
 			ui.$buttons.append( ui.previousButton.$element );
 		} );
 	};
+
+	/**
+	 * Show errors/warnings/notices in the form.
+	 * Some pages can be vertically long, so sometimes it is not obvious there are errors above.
+	 * This counts them and puts the count right next to the submit button,
+	 * so it should be obvious to the user they need to fix things.
+	 * This is a bit of a hack. We should already know how many errors there are, and where.
+	 * This method also opens up collapsed elements if the form has errors.
+	 *
+	 * @param {mw.message[]} errors
+	 * @param {mw.message[]} warnings
+	 * @param {mw.message[]} notices
+	 */
+	uw.ui.Step.prototype.showErrors = function ( errors, warnings, notices ) {
+		var show = ( kind, count ) => {
+			var $elements = this.$div.find( '.mwe-upwiz-fieldLayout-' + kind );
+
+			// Open collapsed elements that contain errors
+			$elements.each( function () {
+				var $collapsibleWrapper = $( this ).closest( '.mw-collapsible' );
+				if ( $collapsibleWrapper.length ) {
+					$collapsibleWrapper.data( 'mw-collapsible' ).expand();
+				}
+			} );
+
+			this.$errorCount.append(
+				new OO.ui.MessageWidget( {
+					type: kind,
+					inline: true,
+					label: mw.message( 'mwe-upwiz-details-' + kind + '-count', count, this.uploads.length ).text()
+				} ).$element
+			);
+
+			// Immediately stop existing animations, then scroll to first error
+			// eslint-disable-next-line no-jquery/no-global-selector
+			$( 'html, body' ).stop().animate( { scrollTop: $( $elements[ 0 ] ).offset().top - 50 }, 'slow' );
+		};
+
+		// Default to showing errors; warnings are shown only if there are no errors
+		this.$errorCount.empty();
+		if ( errors.length > 0 ) {
+			show( 'error', errors.length );
+		} else if ( warnings.length > 0 ) {
+			show( 'warning', warnings.length );
+		} else if ( notices.length > 0 ) {
+			// don't bother with notices; no need to inform user about those merely showing them near the input
+		}
+	};
+
 }( mw.uploadWizard ) );

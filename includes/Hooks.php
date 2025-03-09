@@ -2,36 +2,26 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use DatabaseUpdater;
-use RequestContext;
-use User;
+use MediaWiki\ChangeTags\Hook\ChangeTagsAllowedAddHook;
+use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
+use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Hook\IsUploadAllowedFromUrlHook;
+use MediaWiki\Hook\PreferencesGetIconHook;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\User\User;
 
-class Hooks {
-
-	/**
-	 * Schema update to set up the needed database tables.
-	 *
-	 * @since 1.2
-	 *
-	 * @param DatabaseUpdater|null $updater
-	 *
-	 * @return true
-	 */
-	public static function onSchemaUpdate( /* DatabaseUpdater */ $updater = null ) {
-		$type = $updater->getDB()->getType();
-		$path = dirname( __DIR__ ) . '/sql/';
-
-		$updater->addExtensionTable( 'uw_campaigns', "$path/$type/tables-generated.sql" );
-
-		// 1.38
-		$updater->modifyExtensionField(
-			'uw_campaigns',
-			'uw_campaigns_enabled',
-			"$path/$type/patch-uw_campaigns-cleanup.sql"
-		);
-
-		return true;
-	}
+class Hooks implements
+	GetPreferencesHook,
+	IsUploadAllowedFromUrlHook,
+	ListDefinedTagsHook,
+	ChangeTagsListActiveHook,
+	ChangeTagsAllowedAddHook,
+	PreferencesGetIconHook
+{
 
 	/**
 	 * Adds the preferences of UploadWizard to the list of available ones.
@@ -41,10 +31,8 @@ class Hooks {
 	 *
 	 * @param User $user
 	 * @param array &$preferences
-	 *
-	 * @return true
 	 */
-	public static function onGetPreferences( User $user, array &$preferences ) {
+	public function onGetPreferences( $user, &$preferences ) {
 		$config = Config::getConfig();
 
 		// User preference to skip the licensing tutorial, provided it's not globally disabled
@@ -144,8 +132,6 @@ class Hooks {
 		$preferences['upwiz_mv_cta_dismissed'] = [
 			'type' => 'api'
 		];
-
-		return true;
 	}
 
 	/**
@@ -153,7 +139,7 @@ class Hooks {
 	 *
 	 * @param array &$iconNames Array of icon names for their respective sections.
 	 */
-	public static function onPreferencesGetIcon( &$iconNames ) {
+	public function onPreferencesGetIcon( &$iconNames ) {
 		$iconNames[ 'uploads' ] = 'upload';
 	}
 
@@ -161,9 +147,8 @@ class Hooks {
 	 * Hook to blacklist flickr images by intercepting upload from url
 	 * @param string $url
 	 * @param bool &$allowed
-	 * @return true
 	 */
-	public static function onIsUploadAllowedFromUrl( $url, &$allowed ) {
+	public function onIsUploadAllowedFromUrl( $url, &$allowed ) {
 		if ( $allowed ) {
 			$flickrBlacklist = new FlickrBlacklist(
 				Config::getConfig(),
@@ -173,7 +158,6 @@ class Hooks {
 				$allowed = false;
 			}
 		}
-		return true;
 	}
 
 	/**
@@ -191,7 +175,8 @@ class Hooks {
 			return wfMessage(
 				$licenseConfig[$licenseName]['msg'],
 				'',
-				$licenseConfig[$licenseName]['url']
+				$licenseConfig[$licenseName]['url'],
+				''
 			)->parse();
 		}
 
@@ -202,12 +187,77 @@ class Hooks {
 	 * Lists tags used by UploadWizard (via ListDefinedTags,
 	 * ListExplicitlyDefinedTags & ChangeTagsListActive hooks)
 	 *
-	 * @param array &$tags
-	 * @return bool true
+	 * @param string[] &$tags
 	 */
-	public static function onListDefinedTags( &$tags ) {
+	public static function addListDefinedTags( &$tags ) {
 		$tags[] = 'uploadwizard';
 		$tags[] = 'uploadwizard-flickr';
-		return true;
+	}
+
+	/**
+	 * @param string[] &$tags
+	 */
+	public function onListDefinedTags( &$tags ) {
+		$this->addListDefinedTags( $tags );
+	}
+
+	/**
+	 * @param string[] &$tags
+	 */
+	public function onChangeTagsListActive( &$tags ) {
+		$this->addListDefinedTags( $tags );
+	}
+
+	/**
+	 * @param string[] &$allowedTags
+	 * @param string[] $addTags
+	 * @param User|null $user
+	 */
+	public function onChangeTagsAllowedAdd( &$allowedTags, $addTags, $user ) {
+		$this->addListDefinedTags( $allowedTags );
+	}
+
+	/**
+	 * Add UW-specific titles for default SD properties
+	 *
+	 * @param OutputPage $out
+	 * @param \Skin $skin
+	 */
+	public function onBeforePageDisplay( $out, $skin ): void {
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+
+		if ( ExtensionRegistry::getInstance()->isLoaded( 'WikibaseMediaInfo' ) ) {
+			$properties = $config->get( 'MediaInfoProperties' );
+			if ( $properties ) {
+				$propertyTitles = [];
+				$propertyPlaceholders = [];
+				$propertyCopyLabels = [];
+				foreach ( $properties as $name => $property ) {
+					// some properties/statements may have custom titles, in addition to their property
+					// label, to help clarify what data is expected there
+					// possible messages include:
+					// mwe-upwiz-statements-title-depicts
+					$message = wfMessage( 'mwe-upwiz-statements-title-' . ( $name ?: '' ) );
+					if ( $message->exists() ) {
+						$propertyTitles[$property] = $message->text();
+					}
+					// same with placeholders
+					$message = wfMessage( 'mwe-upwiz-statements-placeholder-' . ( $name ?: '' ) );
+					if ( $message->exists() ) {
+						$propertyPlaceholders[$property] = $message->text();
+					}
+					// same with "copy" label
+					$message = wfMessage( 'mwe-upwiz-copy-statements-' . ( $name ?: '' ) );
+					if ( $message->exists() ) {
+						$propertyCopyLabels[$property] = $message->text();
+					}
+				}
+				$out->addJsConfigVars( [
+					'upwizPropertyTitles' => $propertyTitles,
+					'upwizPropertyPlaceholders' => $propertyPlaceholders,
+					'upwizPropertyCopyLabels' => $propertyCopyLabels,
+				] );
+			}
+		}
 	}
 }

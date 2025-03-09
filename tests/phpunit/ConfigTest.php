@@ -5,13 +5,14 @@ namespace MediaWiki\Extension\UploadWizard\Tests;
 use MediaWiki\Extension\UploadWizard\Campaign;
 use MediaWiki\Extension\UploadWizard\Config;
 use MediaWiki\Interwiki\ClassicInterwikiLookup;
+use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use Title;
 
 /**
  * Test the Upload Wizard Configuration
  *
  * @group Upload
+ * @group Database
  * @covers \MediaWiki\Extension\UploadWizard\Campaign
  * @covers \MediaWiki\Extension\UploadWizard\Config
  */
@@ -26,8 +27,8 @@ class ConfigTest extends MediaWikiIntegrationTestCase {
 		// insert a interwiki prefixes for testing inter-language links.
 		// This is based on ParserTestRunner::appendInterwikiSetup, which does
 		// exactly the same (but with more prefixes) for parser tests.
-		$this->setMwGlobals( [
-			'wgInterwikiCache' => ClassicInterwikiLookup::buildCdbHash( [
+		$this->overrideConfigValues( [
+			'InterwikiCache' => ClassicInterwikiLookup::buildCdbHash( [
 				[
 					'iw_prefix' => 'es',
 					'iw_url' => 'http://es.wikipedia.org/wiki/$1',
@@ -39,7 +40,7 @@ class ConfigTest extends MediaWikiIntegrationTestCase {
 		] );
 	}
 
-	public function objRefProvider() {
+	public static function objRefProvider() {
 		return [
 			[
 				'',
@@ -72,8 +73,8 @@ class ConfigTest extends MediaWikiIntegrationTestCase {
 	) {
 		global $wgUploadWizardConfig;
 
-		$this->setMwGlobals( [
-			'wgUploadWizardConfig' => array_merge( $wgUploadWizardConfig, [
+		$this->overrideConfigValues( [
+			'UploadWizardConfig' => array_merge( $wgUploadWizardConfig, [
 				'defaults' => [ 'objref' => $objRef ],
 			] ),
 		] );

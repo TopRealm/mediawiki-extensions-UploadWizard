@@ -58,16 +58,13 @@
 		// make sure queue is empty before starting this step
 		this.queue.abortExecuting();
 
-		this.uploads.forEach( function ( upload ) {
+		this.uploads.forEach( ( upload ) => {
 			var serialized;
 
 			// get existing details
 			serialized = upload.details ? upload.details.getSerialized() : null;
 
 			controller.createDetails( upload );
-			if ( upload.file.fromURL || ( upload.deedChooser && upload.deedChooser.deed.name === 'custom' ) ) {
-				upload.details.useCustomDeedChooser();
-			}
 			upload.details.attach();
 
 			// restore earlier details (user may have started inputting details,
@@ -107,7 +104,7 @@
 		// rest failed because of abusefilter (or another recoverable error), in
 		// which case we'll want the "copy" feature to appear below the 2nd
 		// upload (or the first not-yet-completed not flat-out-failed upload)
-		this.uploads.some( function ( upload ) {
+		this.uploads.some( ( upload ) => {
 			if ( upload && invalidStates.indexOf( upload.state ) === -1 ) {
 				first = upload;
 				return true; // Break Array.some loop
@@ -123,15 +120,34 @@
 		this.copyMetadataWidget = new uw.CopyMetadataWidget( {
 			copyFrom: first,
 			// Include the "source" upload in the targets too
-			copyTo: this.uploads
+			copyTo: this.uploads,
+			captionsAvailable: this.config.wikibase.enabled && this.config.wikibase.captions
 		} );
+		this.copyMetadataField = new uw.FieldLayout( this.copyMetadataWidget, {
+			label: $( '<span>' ).append(
+				new OO.ui.IconWidget( { icon: 'expand' } ).$element,
+				new OO.ui.IconWidget( { icon: 'collapse' } ).$element,
+				' ',
+				mw.msg( 'mwe-upwiz-copy-metadata-text' )
+			),
+			classes: [
+				'mwe-upwiz-fieldLayout-additional-info', 'mwe-upwiz-copyMetadataWidget',
+				'mwe-upwiz-fieldLayout-additional-info-clickable'
+			]
+		} );
+		this.copyMetadataWidget.$element.makeCollapsible( {
+			collapsed: true,
+			$customTogglers: this.copyMetadataField.$element.find( '.oo-ui-fieldLayout-header' )
+		} );
+		// the field isn't actually required, but we want to hide the "optional" text
+		this.copyMetadataField.setRequired( true );
 
-		first.details.$div.after( this.copyMetadataWidget.$element );
+		first.details.$form.append( this.copyMetadataField.$element );
 	};
 
 	uw.controller.Details.prototype.removeCopyMetadataFeature = function () {
-		if ( this.copyMetadataWidget ) {
-			this.copyMetadataWidget.$element.remove();
+		if ( this.copyMetadataField ) {
+			this.copyMetadataField.$element.remove();
 		}
 	};
 
@@ -150,111 +166,50 @@
 	uw.controller.Details.prototype.startDetails = function () {
 		var details = this;
 
-		this.valid().done( function ( valid ) {
-			if ( valid ) {
+		this.valid( true )
+			.always( ( errors, warnings, notices ) => {
+				details.showErrors( errors, warnings, notices );
+			} )
+			.done( () => {
 				details.ui.hideEndButtons();
 				details.submit();
-			} else {
-				details.showErrors();
-			}
-		} );
+			} );
 	};
 
 	/**
 	 * Check details for validity.
 	 *
+	 * @param {boolean} thorough
 	 * @return {jQuery.Promise}
 	 */
-	uw.controller.Details.prototype.valid = function () {
-		var detailsController = this,
-			// validityPromises will hold all promises for all uploads;
-			// prefilling with a bogus promise (no warnings & errors) to
-			// ensure $.when always resolves with an array of multiple
-			// results (if there's just 1, it would otherwise have just
-			// that one's arguments, instead of a multi-dimensional array
-			// of upload warnings & failures)
-			validityPromises = [ $.Deferred().resolve( [], [] ).promise() ],
-			titles = [];
+	uw.controller.Details.prototype.valid = function ( thorough ) {
+		var titles = [],
+			validityPromises = [];
 
-		this.uploads.forEach( function ( upload ) {
-			// Update any error/warning messages about all DetailsWidgets
-			var promise = upload.details.checkValidity( true ).then( function () {
-				var warnings = [],
-					errors = [],
-					title;
+		thorough = thorough || false;
 
-				Array.prototype.forEach.call( arguments, function ( result ) {
-					warnings = warnings.concat( result[ 0 ] );
-					errors = errors.concat( result[ 1 ] );
-				} );
-
-				// Seen this title before?
-				title = upload.details.getTitle();
-				if ( title ) {
-					title = title.getName() + '.' + mw.Title.normalizeExtension( title.getExtension() );
-					if ( titles[ title ] ) {
-						// Don't submit. Instead, set an error in details step.
-						upload.details.setDuplicateTitleError();
-						errors.push( mw.message( 'mwe-upwiz-error-title-duplicate' ) );
-					} else {
-						titles[ title ] = true;
-					}
+		this.uploads.forEach( ( upload ) => {
+			// Seen this title before?
+			var title = upload.details.getTitle();
+			if ( title ) {
+				title = title.getName() + '.' + mw.Title.normalizeExtension( title.getExtension() );
+				if ( titles[ title ] ) {
+					// Don't submit. Instead, set an error in details step.
+					upload.details.setDuplicateTitleError();
+					validityPromises.push(
+						$.Deferred().reject( [ mw.message( 'mwe-upwiz-error-title-duplicate' ) ], [], [] ).promise()
+					);
+				} else {
+					titles[ title ] = true;
 				}
-
-				return $.Deferred().resolve( warnings, errors ).promise();
-			} );
-
-			// Will hold an array of validation promises, one for each upload
-			validityPromises.push( promise );
-		} );
-
-		// validityPromises is an array of promises that each resolve with [warnings, errors]
-		// for each upload - now iterate them all to figure out if we can proceed
-		return $.when.apply( $, validityPromises ).then( function () {
-			var warnings = [],
-				errors = [];
-
-			Array.prototype.forEach.call( arguments, function ( result ) {
-				warnings = warnings.concat( result[ 0 ] );
-				errors = errors.concat( result[ 1 ] );
-			} );
-
-			if ( errors.length > 0 ) {
-				return $.Deferred().resolve( false );
 			}
 
-			if ( warnings.length > 0 ) {
-				// Update warning count before dialog
-				detailsController.showErrors();
-				return detailsController.confirmationDialog( warnings );
-			}
-
-			return $.Deferred().resolve( true );
-		} );
-	};
-
-	uw.controller.Details.prototype.confirmationDialog = function ( warnings ) {
-		var i,
-			$message = $( '<p>' ).text( mw.message( 'mwe-upwiz-dialog-warning' ).text() ),
-			$ul = $( '<ul>' );
-
-		// parse warning messages
-		warnings = warnings.map( function ( warning ) {
-			return warning.text();
+			upload.details.getAllFields().forEach( ( fieldLayout ) => {
+				validityPromises.push( fieldLayout.checkValidity( thorough ) );
+			} );
 		} );
 
-		// omit duplicates
-		warnings = warnings.filter( function ( warning, i, warnings ) {
-			return warnings.indexOf( warning ) === i;
-		} );
-
-		for ( i = 0; i < warnings.length; i++ ) {
-			$ul.append( $( '<li>' ).text( warnings[ i ] ) );
-		}
-
-		return OO.ui.confirm( $message.append( $ul ), {
-			title: mw.message( 'mwe-upwiz-dialog-title' ).text()
-		} );
+		return this.combineValidityPromises( validityPromises );
 	};
 
 	uw.controller.Details.prototype.canTransition = function ( upload ) {
@@ -284,7 +239,7 @@
 			deferred = $.Deferred(),
 			details = this;
 
-		this.uploads.forEach( function ( upload ) {
+		this.uploads.forEach( ( upload ) => {
 			if ( details.canTransition( upload ) ) {
 				details.queue.addItem( upload );
 			}
@@ -304,7 +259,7 @@
 	uw.controller.Details.prototype.submit = function () {
 		var details = this;
 
-		this.uploads.forEach( function ( upload ) {
+		this.uploads.forEach( ( upload ) => {
 			// Clear error state
 			if ( upload.state === 'error' || upload.state === 'recoverable-error' ) {
 				upload.state = details.stepName;
@@ -318,9 +273,7 @@
 		this.ui.disableEdits();
 		this.removeCopyMetadataFeature();
 
-		return this.transitionAll().then( function () {
-			details.showErrors();
-
+		return this.transitionAll().then( () => {
 			if ( details.showNext() ) {
 				details.moveNext();
 			}
@@ -328,17 +281,20 @@
 	};
 
 	/**
-	 * Show warnings and errors in the form.
+	 * Show errors, warnings & notices in the form.
 	 * See UI class for more.
+	 *
+	 * @param {mw.message[]} errors
+	 * @param {mw.message[]} warnings
+	 * @param {mw.message[]} notices
 	 */
-	uw.controller.Details.prototype.showErrors = function () {
+	uw.controller.Details.prototype.showErrors = function ( errors, warnings, notices ) {
 		this.ui.enableEdits();
 
 		this.removeCopyMetadataFeature();
 		this.addCopyMetadataFeature();
 
-		this.ui.showWarnings(); // Scroll to the warning first so that any errors will have precedence
-		this.ui.showErrors();
+		this.ui.showErrors( errors, warnings, notices );
 	};
 
 	/**

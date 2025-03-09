@@ -20,7 +20,7 @@
 	 * Represents a step in the wizard.
 	 *
 	 * @class
-	 * @mixins OO.EventEmitter
+	 * @mixes OO.EventEmitter
 	 * @abstract
 	 * @param {uw.ui.Step} ui The UI object that controls this step.
 	 * @param {mw.Api} api
@@ -34,7 +34,12 @@
 		/**
 		 * @property {Object} config
 		 */
-		this.config = config;
+		this.config = Object.assign(
+			{
+				showInBreadcrumb: true
+			},
+			config
+		);
 		/**
 		 * @property {mw.Api} api
 		 */
@@ -56,17 +61,16 @@
 		 * `upload.on( <key>, <value>.bind( this, upload ) );`
 		 *
 		 * @property {Object}
-		 *
 		 */
 		this.uploadHandlers = {
 			'remove-upload': this.removeUpload
 		};
 
-		this.ui.on( 'next-step', function () {
+		this.ui.on( 'next-step', () => {
 			step.moveNext();
 		} );
 
-		this.ui.on( 'previous-step', function () {
+		this.ui.on( 'previous-step', () => {
 			step.movePrevious();
 		} );
 
@@ -81,6 +85,8 @@
 		 * The previous step in the process.
 		 */
 		this.previousStep = null;
+
+		this.showInBreadcrumb = this.config.showInBreadcrumb;
 	};
 
 	OO.mixinClass( uw.controller.Step, OO.EventEmitter );
@@ -122,7 +128,7 @@
 			test: step.hasData.bind( this )
 		} );
 
-		this.uploads.forEach( function ( upload ) {
+		this.uploads.forEach( ( upload ) => {
 			upload.state = step.stepName;
 
 			step.bindUploadHandlers( upload );
@@ -137,7 +143,7 @@
 	uw.controller.Step.prototype.unload = function () {
 		var step = this;
 
-		this.uploads.forEach( function ( upload ) {
+		this.uploads.forEach( ( upload ) => {
 			step.unbindUploadHandlers( upload );
 		} );
 
@@ -177,7 +183,7 @@
 	uw.controller.Step.prototype.bindUploadHandlers = function ( upload ) {
 		var controller = this;
 
-		Object.keys( this.uploadHandlers ).forEach( function ( event ) {
+		Object.keys( this.uploadHandlers ).forEach( ( event ) => {
 			var callback = controller.uploadHandlers[ event ];
 			upload.on( event, callback, [ upload ], controller );
 		} );
@@ -191,7 +197,7 @@
 	uw.controller.Step.prototype.unbindUploadHandlers = function ( upload ) {
 		var controller = this;
 
-		Object.keys( this.uploadHandlers ).forEach( function ( event ) {
+		Object.keys( this.uploadHandlers ).forEach( ( event ) => {
 			var callback = controller.uploadHandlers[ event ];
 			upload.off( event, callback, controller );
 		} );
@@ -222,8 +228,7 @@
 	 * @return {boolean} Whether all of the uploads are in a successful state.
 	 */
 	uw.controller.Step.prototype.showNext = function () {
-		var okCount = this.getUploadStatesCount( this.finishState ),
-			$buttons;
+		var okCount = this.getUploadStatesCount( this.finishState );
 
 		// abort if all uploads have been removed
 		if ( this.uploads.length === 0 ) {
@@ -232,12 +237,9 @@
 
 		this.updateProgressBarCount( okCount );
 
-		$buttons = this.ui.$div.find( '.mwe-upwiz-buttons' );
-		$buttons.show();
-
-		$buttons.find( '.mwe-upwiz-file-next-all-ok' ).hide();
-		$buttons.find( '.mwe-upwiz-file-next-some-failed' ).hide();
-		$buttons.find( '.mwe-upwiz-file-next-all-failed' ).hide();
+		var $buttons = this.ui.$div.find( '.mwe-upwiz-buttons' ).show();
+		$buttons.find( '.mwe-upwiz-file-next-all-ok, .mwe-upwiz-file-next-some-failed, .mwe-upwiz-file-next-all-failed' )
+			.hide();
 
 		if ( okCount === this.uploads.length ) {
 			$buttons.find( '.mwe-upwiz-file-next-all-ok' ).show();
@@ -263,7 +265,7 @@
 		// normalize to array of states, even though input can be 1 string
 		states = Array.isArray( states ) ? states : [ states ];
 
-		this.uploads.forEach( function ( upload ) {
+		this.uploads.forEach( ( upload ) => {
 			if ( states.indexOf( upload.state ) > -1 ) {
 				count++;
 			}
@@ -337,13 +339,63 @@
 		// We must not remove items from an array while iterating over it with $.each (it causes the
 		// next item to be skipped). Find and queue them first, then remove them.
 		var toRemove = [];
-		this.uploads.forEach( function ( upload ) {
+		this.uploads.forEach( ( upload ) => {
 			if ( upload.state === 'error' || upload.state === 'recoverable-error' ) {
 				toRemove.push( upload );
 			}
 		} );
 
 		this.removeUploads( toRemove );
+	};
+
+	/**
+	 * Check details for validity.
+	 *
+	 * @param {jQuery.Promise[]} validityPromises
+	 * @return {jQuery.Promise}
+	 */
+	uw.controller.Step.prototype.combineValidityPromises = function ( validityPromises ) {
+		// $.when will be applied on all promises, but we need to ensure
+		// that they will all actually resolve. If any of them rejects,
+		// it will immediately cause the master promise to reject, leaving
+		// us with incomplete error/warning/notice arrays.
+		// To avoid this, we'll catch rejected promises and convert them
+		// into a new one that resolves
+		var resolveablePromises = validityPromises.map(
+			( promise ) => promise.then(
+				null,
+				( errors, warnings, notices ) => $.Deferred().resolve( errors, warnings, notices ).promise()
+			)
+		);
+
+		while ( resolveablePromises.length < 2 ) {
+			// adding bogus promises (no errors, warnings & notices) to
+			// ensure $.when always resolves with an array of multiple
+			// results (if there's just 1, it would otherwise have just
+			// that one's arguments, instead of a multi-dimensional array
+			// of upload errors, warnings & notices)
+			resolveablePromises.push( $.Deferred().resolve( [], [], [] ).promise() );
+		}
+
+		// validityPromises is an array of promises that each resolve with [errors, warnings, notices]
+		// for each upload - now iterate them all to figure out if we can proceed
+		return $.when.apply( $, resolveablePromises ).then( function () {
+			var errors = [],
+				warnings = [],
+				notices = [];
+
+			Array.prototype.forEach.call( arguments, ( result ) => {
+				errors = errors.concat( result[ 0 ] || [] );
+				warnings = warnings.concat( result[ 1 ] || [] );
+				notices = notices.concat( result[ 2 ] || [] );
+			} );
+
+			if ( errors.length > 0 ) {
+				return $.Deferred().reject( errors, warnings, notices ).promise();
+			}
+
+			return $.Deferred().resolve( errors, warnings, notices ).promise();
+		} );
 	};
 
 }( mw.uploadWizard ) );

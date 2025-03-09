@@ -5,14 +5,15 @@
 	/**
 	 * A categories field in UploadWizard's "Details" step form.
 	 *
+	 * @param config
 	 * @extends uw.DetailsWidget
 	 */
-	uw.CategoriesDetailsWidget = function UWCategoriesDetailsWidget() {
+	uw.CategoriesDetailsWidget = function UWCategoriesDetailsWidget( config ) {
 		var categories, catDetails = this;
 
-		uw.CategoriesDetailsWidget.parent.call( this );
+		uw.CategoriesDetailsWidget.super.call( this );
 
-		this.categoriesWidget = new mw.widgets.CategoryMultiselectWidget();
+		this.categoriesWidget = new mw.widgets.CategoryMultiselectWidget( config );
 
 		this.categoriesWidget.createTagItemWidget = function ( data ) {
 			var widget = this.constructor.prototype.createTagItemWidget.call( this, data );
@@ -27,10 +28,8 @@
 			return widget;
 		};
 
-		categories = ( mw.UploadWizard.config.defaults.categories || [] ).filter( function ( cat ) {
-			// Keep only valid titles
-			return !!mw.Title.makeTitle( NS_CATEGORY, cat );
-		} );
+		// Keep only valid titles
+		categories = ( mw.UploadWizard.config.defaults.categories || [] ).filter( ( cat ) => !!mw.Title.makeTitle( NS_CATEGORY, cat ) );
 		this.categoriesWidget.setValue( categories );
 
 		this.$element.addClass( 'mwe-upwiz-categoriesDetailsWidget' );
@@ -52,15 +51,13 @@
 	 * @inheritdoc
 	 */
 	uw.CategoriesDetailsWidget.prototype.getWarnings = function () {
-		var warnings = [];
-		if ( mw.UploadWizard.config.enableCategoryCheck && this.categoriesWidget.isEmpty() ) {
-			warnings.push( mw.message( 'mwe-upwiz-warning-categories-missing' ) );
+		var warnings = [],
+			missing = this.categoriesWidget.getItems().filter( ( item ) => item.missing );
+
+		if ( missing.length > 0 ) {
+			warnings.push( mw.message( 'mwe-upwiz-categories-missing', missing.length ) );
 		}
-		if ( this.categoriesWidget.getItems().some( function ( item ) {
-			return item.missing;
-		} ) ) {
-			warnings.push( mw.message( 'mwe-upwiz-categories-missing' ) );
-		}
+
 		return $.Deferred().resolve( warnings ).promise();
 	};
 
@@ -82,10 +79,8 @@
 				hiddenCats.push( mw.UploadWizard.config.trackingCategory.campaign );
 			}
 		}
-		hiddenCats = hiddenCats.filter( function ( cat ) {
-			// Keep only valid titles
-			return !!mw.Title.makeTitle( NS_CATEGORY, cat );
-		} );
+		// Keep only valid titles
+		hiddenCats = hiddenCats.filter( ( cat ) => !!mw.Title.makeTitle( NS_CATEGORY, cat ) );
 
 		missingCatsWikiText = null;
 		if (
@@ -95,15 +90,11 @@
 			missingCatsWikiText = mw.UploadWizard.config.missingCategoriesWikiText;
 		}
 
-		categories = this.categoriesWidget.getItems().map( function ( item ) {
-			return item.data;
-		} );
+		categories = this.categoriesWidget.getItems().map( ( item ) => item.data );
 
 		// add all categories
 		wikiText = categories.concat( hiddenCats )
-			.map( function ( cat ) {
-				return '[[' + mw.Title.makeTitle( NS_CATEGORY, cat ).getPrefixedText() + ']]';
-			} )
+			.map( ( cat ) => '[[' + mw.Title.makeTitle( NS_CATEGORY, cat ).getPrefixedText() + ']]' )
 			.join( '\n' );
 
 		// if so configured, and there are no user-visible categories, add warning
@@ -120,9 +111,7 @@
 	 */
 	uw.CategoriesDetailsWidget.prototype.getSerialized = function () {
 		return {
-			value: this.categoriesWidget.getItems().map( function ( item ) {
-				return item.data;
-			} )
+			value: this.categoriesWidget.getItems().map( ( item ) => item.data )
 		};
 	};
 

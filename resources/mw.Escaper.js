@@ -1,4 +1,7 @@
 ( function () {
+	/**
+	 * @class
+	 */
 	mw.Escaper = {
 		/**
 		 * Escapes wikitext for use inside {{templates}}.
@@ -23,9 +26,7 @@
 			// Pipes (`|`) must be escaped because we'll be inserting this
 			// content into a templates & pipes would mess up the syntax.
 			// First, urlencode pipes inside links:
-			wikitext = wikitext.replace( /\bhttps?:\/\/[^\s]+/g, function ( match ) {
-				return match.replace( /\|/g, '%7C' );
-			} );
+			wikitext = wikitext.replace( /\bhttps?:\/\/[^\s]+/g, ( match ) => match.replace( /\|/g, '%7C' ) );
 
 			// Second, pipes can be valid inside other templates or links in
 			// wikitext, so we'll first extract those from the content, then
@@ -33,7 +34,7 @@
 			extractedTemplates = this.extractTemplates( wikitext );
 			extractedLinks = this.extractLinks( extractedTemplates[ 0 ] );
 			wikitext = extractedLinks[ 0 ].replace( /\|/g, '{{!}}' );
-			return this.restoreExtracts( wikitext, $.extend( extractedTemplates[ 1 ], extractedLinks[ 1 ] ) );
+			return this.restoreExtracts( wikitext, Object.assign( extractedTemplates[ 1 ], extractedLinks[ 1 ] ) );
 		},
 
 		/**
@@ -98,7 +99,7 @@
 		extractLinks: function ( wikitext ) {
 			var extracts = {};
 
-			wikitext = wikitext.replace( /\[\[.*?\]\]/g, function ( match ) {
+			wikitext = wikitext.replace( /\[\[.*?\]\]/g, ( match ) => {
 				var replacement = '[[' + Object.keys( extracts ).length + ']]';
 				extracts[ replacement ] = match;
 				return replacement;

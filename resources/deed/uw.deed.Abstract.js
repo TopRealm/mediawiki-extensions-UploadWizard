@@ -19,16 +19,44 @@
 	/**
 	 * Represents a generic deed.
 	 *
-	 * @class uw.deed.Abstract
-	 * @constructor
+	 * @class
 	 * @param {string} name The name of this step
 	 * @param {Object} config The UW config
+	 * @param {mw.UploadWizardUpload[]} uploads Array of uploads that this deed refers to
 	 */
-	uw.deed.Abstract = function UWDeedInterface( name, config ) {
+	uw.deed.Abstract = function UWDeedInterface( name, config, uploads ) {
+		var tcName, details, field, input;
 		this.name = name;
 		this.config = config;
 		uw.deed.Abstract.prototype.instanceCount++;
 		this.instanceCount = uw.deed.Abstract.prototype.instanceCount;
+
+		this.templateOptions = {};
+		if ( config.templateOptions && config.templateOptions[ name ] ) {
+			for ( tcName in this.config.templateOptions[ name ] ) {
+				details = this.config.templateOptions[ name ][ tcName ];
+				input = new OO.ui.CheckboxInputWidget( {
+					name: tcName,
+					value: details.template
+				} );
+				field = new uw.FieldLayout(
+					input,
+					{
+						label: mw.message(
+							details.label,
+							uploads.length,
+							mw.user
+						).parse(),
+						align: 'inline',
+						required: true // not really required, set true so "optional" won't display
+					}
+				);
+				this.templateOptions[ tcName ] = {
+					field: field,
+					input: input
+				};
+			}
+		}
 	};
 
 	/**
@@ -87,8 +115,15 @@
 	 * @return {Object}
 	 */
 	uw.deed.Abstract.prototype.getSerialized = function () {
+		var name, selectedTemplateOptions = [];
+		for ( name in this.templateOptions ) {
+			if ( this.templateOptions[ name ].input.isSelected() ) {
+				selectedTemplateOptions.push( name );
+			}
+		}
 		return {
-			name: this.name
+			name: this.name,
+			selectedTemplateOptions: selectedTemplateOptions
 		};
 	};
 
@@ -96,9 +131,13 @@
 	 * @param {Object} serialized
 	 */
 	uw.deed.Abstract.prototype.setSerialized = function ( serialized ) {
+		var self = this;
 		if ( serialized.name ) {
 			this.name = serialized.name;
 		}
+		serialized.selectedTemplateOptions.forEach( ( name ) => {
+			self.templateOptions[ name ].input.setSelected( true );
+		} );
 	};
 
 	/**
@@ -162,10 +201,10 @@
 			windowManager.addWindows( [ dialog ] );
 			windowManager.openWindow( dialog );
 
-			dialog.on( 'disagree', function () {
+			dialog.on( 'disagree', () => {
 				deferred.resolve( [ mw.message( 'mwe-upwiz-error-patent-disagree' ) ] );
 			} );
-			dialog.on( 'agree', function () {
+			dialog.on( 'agree', () => {
 				deed.patentAgreed = true;
 				deferred.resolve( [] );
 			} );
@@ -175,4 +214,29 @@
 			return $.Deferred().resolve( [] ).promise();
 		}
 	};
+
+	/**
+	 * @return {string}
+	 */
+	uw.deed.Abstract.prototype.getTemplateOptionsWikiText = function () {
+		var name, option, wikitext = '';
+		for ( name in this.templateOptions ) {
+			option = this.templateOptions[ name ].input;
+			if ( option.isSelected() ) {
+				wikitext += option.getValue();
+			}
+		}
+		return wikitext;
+	};
+
+	/**
+	 * Only implemented for OwnWork
+	 */
+	uw.deed.Abstract.prototype.getAiPromptWikitext = function () {};
+
+	/**
+	 * Only implemented for ThirdParty
+	 */
+	uw.deed.Abstract.prototype.getStructuredDataFromSource = function () {};
+
 }( mw.uploadWizard ) );

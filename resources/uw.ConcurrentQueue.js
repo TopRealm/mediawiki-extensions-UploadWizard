@@ -7,7 +7,8 @@
 	 * Items can be added or removed (#addItem, #removeItem) while the queue is already being
 	 * executed.
 	 *
-	 * @mixins OO.EventEmitter
+	 * @class
+	 * @mixes OO.EventEmitter
 	 * @param {Object} options
 	 * @param {Function} options.action Action to execute for each item, must return a Promise
 	 * @param {number} options.count Number of functions to execute concurrently
@@ -32,19 +33,19 @@
 	/**
 	 * A 'progress' event is emitted when one of the functions' promises is resolved or rejected.
 	 *
-	 * @event progress
+	 * @event uw.ConcurrentQueue.progress
 	 */
 
 	/**
 	 * A 'complete' event is emitted when all of the functions' promises have been resolved or rejected.
 	 *
-	 * @event complete
+	 * @event uw.ConcurrentQueue.complete
 	 */
 
 	/**
 	 * A 'change' event is emitted when an item is added to or removed from the queue.
 	 *
-	 * @event change
+	 * @event uw.ConcurrentQueue.change
 	 */
 
 	/**
@@ -134,7 +135,7 @@
 	 */
 	uw.ConcurrentQueue.prototype.executeNext = function () {
 		var item, promise;
-		if ( this.running.length === this.count || !this.executing ) {
+		if ( this.running.length >= this.count || !this.executing ) {
 			return;
 		}
 		item = this.queued.shift();

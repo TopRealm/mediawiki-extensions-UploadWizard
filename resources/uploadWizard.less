@@ -1,11 +1,7 @@
+@import 'mediawiki.skin.variables.less';
+
 form.mwe-upwiz-form {
 	display: inline;
-}
-
-#upload-wizard {
-	margin-top: 18px;
-	min-width: 750px; /* width of tutorial.png plus padding */
-	max-width: 900px; /* wild guess */
 }
 
 #mwe-upwiz-steps {
@@ -13,8 +9,49 @@ form.mwe-upwiz-form {
 	padding: 0;
 	font-size: 1em;
 	line-height: 2.5;
-	background-color: #fff;
+	background-color: @background-color-base;
 	border: 0;
+
+	// shrink steps indicator down on mobile to try to fit all steps on one
+	// line, by slightly reducing the arrow size, paddings & font size;
+	// if the screen is too narrow to even display this, it'll simply wrap
+	// to a 2nd line - can't make things infinitely smaller :)
+	@media screen and ( max-width: @min-width-breakpoint-tablet ) {
+		gap: 3px 0;
+		font-size: 0.75em;
+
+		li {
+			height: 30px;
+		}
+
+		li.head {
+			font-weight: @font-weight-normal;
+		}
+
+		li.arrow::after {
+			border-width: 15px;
+			margin-top: -15px;
+		}
+
+		li.arrow::before {
+			border-width: 18px;
+			margin-top: -18px;
+		}
+
+		li:not( :first-child ):not( :last-child ) div {
+			padding-left: 21px;
+			padding-right: 0;
+		}
+
+		li:first-child div {
+			padding-left: 3px;
+		}
+
+		li:last-child div {
+			padding-left: 21px;
+			padding-right: 3px;
+		}
+	}
 }
 
 .mwe-upwiz-clearing {
@@ -23,237 +60,6 @@ form.mwe-upwiz-form {
 }
 
 #mwe-upwiz-content {
-	margin-top: 1em;
-}
-
-#mwe-upwiz-upload-ctrl-flickr-container {
-	display: inline-block;
-}
-
-.mwe-upwiz-add-files-0,
-#mwe-upwiz-files {
-	margin-top: 3em;
-	margin-bottom: 1em;
-}
-
-.mwe-upwiz-add-files-0 {
-	text-align: center;
-
-	#mwe-upwiz-upload-ctrl-flickr-container {
-		display: block;
-	}
-
-	.mwe-upwiz-add-file {
-		font-size: large;
-		margin-right: 0;
-
-		.oo-ui-buttonElement-framed.oo-ui-labelElement > .oo-ui-buttonElement-button {
-			// Fix vertical alignment of large text button
-			padding-top: 7px;
-		}
-	}
-}
-
-#mwe-upwiz-add-file-container:not( .mwe-upwiz-add-files-0 ) {
-	.mwe-upwiz-add-file {
-		display: inline-block;
-		width: auto;
-		height: auto;
-
-		&.oo-ui-selectFileWidget.oo-ui-selectFileInputWidget-empty.oo-ui-selectFileWidget-dropTarget .oo-ui-selectFileInputWidget-selectButton,
-		&.oo-ui-selectFileWidget.oo-ui-selectFileInputWidget-empty.oo-ui-widget-enabled .oo-ui-selectFileWidget-dropLabel {
-			display: inline-block;
-			margin: 0.5em;
-		}
-	}
-}
-
-.mwe-upwiz-file {
-	&.filled {
-		position: relative;
-	}
-
-	&.odd .mwe-upwiz-visible-file {
-		background: #f8f9fa;
-	}
-
-	&:hover .mwe-upwiz-visible-file {
-		background: #e0f0ff !important; /* stylelint-disable-line declaration-no-important */
-	}
-}
-
-.mwe-upwiz-file-indicator {
-	float: right;
-	padding: 1.5em 1.5em 0 0;
-
-	.oo-ui-messageWidget {
-		width: 20px;
-	}
-}
-
-.mwe-upwiz-count {
-	padding: 0.5em;
-}
-
-.mwe-upwiz-visible-file {
-	display: none;
-	position: relative;
-	z-index: 2;
-	width: 100%; /* of containing mwe-upwiz-file */
-	overflow: hidden;
-
-	.mwe-upwiz-file-indicator {
-		visibility: hidden;
-	}
-
-	.mwe-upwiz-file-indicator-visible {
-		visibility: visible;
-	}
-}
-
-#mwe-upwiz-files {
-	margin-right: 8em;
-	margin-left: 8em;
-}
-
-.mwe-upwiz-file.filled .mwe-upwiz-visible-file {
-	display: block;
-}
-
-.mwe-upwiz-visible-file-filename {
-	padding: 1.5em;
-	margin-right: 40px;
-	overflow: hidden;
-}
-
-#mwe-upwiz-filelist {
-	/* We rely on the margin collapsing with that on #mwe-upwiz-files */
-	margin-top: 3em;
-}
-
-.mwe-upwiz-file-status {
-	display: none;
-	color: #72777d;
-}
-
-.mwe-upwiz-file-status-line ul {
-	margin-top: 0;
-	margin-bottom: 0;
-}
-
-.mwe-upwiz-file-preview {
-	float: left;
-	width: 120px;
-	/*
-	 * min-height ensures the reserved space for a thumbnail gets preserved
-	 * while the thumb gets generated (when there is no content in this div yet)
-	 */
-	min-height: 1px;
-	max-height: 120px;
-	margin-right: 1.5em;
-	text-align: center;
-	/* @embed */
-	background: url( images/32px-Blank-document.svg.png ) no-repeat center center;
-}
-
-.mwe-upwiz-file-texts {
-	/* This also create a new block formatting context, resulting in the whole block
-	   displaying next to image thumbnail, rather than wrapping the lines of text around it */
-	overflow: hidden;
-}
-
-.mwe-upwiz-file-preview-broken {
-	/* @embed */
-	background: url( images/32px-Blank-document-broken.svg.png ) no-repeat center center !important; /* stylelint-disable-line declaration-no-important */
-}
-
-.mwe-upwiz-add-files-n {
-	float: left;
-}
-
-#mwe-upwiz-add-file-container.mwe-upwiz-add-files-n,
-.mwe-upwiz-progress-bar-etr {
-	width: 300px;
-}
-
-.mwe-upwiz-patent-rights .oo-ui-panelLayout .oo-ui-panelLayout:not( :last-child ) {
-	box-shadow: 0 1em 1px -1em #bbb;
-}
-
-.mwe-upwiz-patent-rights-filelist {
-	display: block;
-	text-align: center;
-	box-shadow: 0 0 1px 0 #bbb;
-}
-
-.mwe-upwiz-patent-weapon-policy {
-	margin-top: 1em;
-	padding: 0 1em 0 ~'calc( 32px + 2em )';
-	border: 1px solid #c8ccd1;
-	white-space: pre-wrap;
-	/* @embed */
-	background: #f2f4f7 url( images/no-weapons.svg ) no-repeat 1em 1em;
-	background-size: 32px 32px;
-}
-
-.mwe-upwiz-license-metadata {
-	margin-top: 3em;
-	padding: 0 1em 0 ~'calc( 64px + 2.5em )';
-	border: 1px solid #c8ccd1;
-	white-space: pre-wrap;
-	/* @embed */
-	background: url( images/cc.svg ) no-repeat 1em 1em, url( images/zero.svg ) no-repeat ~'calc( 1.5em + 32px )' 1em;
-	background-size: 32px 32px;
-	background-color: #f2f4f7;
-}
-
-/* Flickr Interface CSS */
-
-#mwe-upwiz-upload-ctr-divide {
-	display: block;
-	font-size: 1.3em;
-}
-
-.mwe-upwiz-flickr-field {
-	margin: 0 6em;
-}
-
-#mwe-upwiz-upload-add-flickr-container {
-	text-align: center;
-}
-
-#mwe-upwiz-flickr-select-list-container {
-	margin: 0 auto;
-	display: none;
-	text-align: center;
-}
-
-#mwe-upwiz-flickr-select-list {
-	clear: both;
-	overflow: hidden;
-	margin-bottom: 1em;
-
-	.oo-ui-checkboxMultioptionWidget {
-		margin: 6px;
-		padding: 1px;
-		width: auto;
-		float: left;
-		display: block;
-	}
-}
-
-#mwe-upwiz-flickr-disclaimer {
-	background-color: #eaf3ff;
-	font-size: 92%;
-	margin: 1em 0;
-	padding: 0.5em;
-}
-
-.filled + .filled {
-	border-top: 1px solid #c8ccd1;
-}
-
-#mwe-upwiz-upload-ctrls {
 	margin-top: 1em;
 }
 
@@ -306,27 +112,8 @@ form.mwe-upwiz-form {
 }
 
 .mwe-upwiz-thumbnail {
-	background-color: #fff;
+	background-color: @background-color-base;
 	text-align: center;
-}
-
-/* thumbs in deed & thanks should not grow too high */
-#mwe-upwiz-stepdiv-deeds,
-#mwe-upwiz-stepdiv-thanks {
-	.mwe-upwiz-thumbnail {
-		max-width: 230px;
-		max-height: 230px;
-	}
-}
-
-/*
- * thumbs in details step can grow as high as they need, it's more important to display
- * them with a uniform width in the left column; it doesn't matter too much if they're
- * tall, there's plenty of content on the right hand side...
- */
-#mwe-upwiz-stepdiv-details .mwe-upwiz-thumbnail {
-	text-align: left;
-	max-width: 230px;
 }
 
 .mwe-upwiz-thumbnail-link {
@@ -335,22 +122,8 @@ form.mwe-upwiz-form {
 
 	canvas,
 	img {
-		box-shadow: 0 0 5px #999;
+		box-shadow: @box-shadow-drop-medium;
 	}
-}
-
-.mwe-upwiz-thumbnail-side {
-	float: left;
-	margin-bottom: 1em;
-	margin-right: 2.5em;
-}
-
-#mwe-upwiz-stepdiv-details .mwe-upwiz-thumbnail-side {
-	width: 230px;
-}
-
-#mwe-upwiz-stepdiv-thanks .mwe-upwiz-thumbnail-side {
-	width: 120px;
 }
 
 .mwe-upwiz-remove-upload {
@@ -358,99 +131,12 @@ form.mwe-upwiz-form {
 	margin-top: 0.5em;
 }
 
-#mwe-upwiz-deeds-thumbnails {
-	background-color: #f8f9fa;
-	border-radius: 2px;
-	text-align: center;
-	margin: 1em 0;
-
-	.mwe-upwiz-thumbnail {
-		display: inline-block;
-		margin: 1em;
-		vertical-align: middle;
-	}
-}
-
-.mwe-upwiz-data {
-	float: left;
-}
-
-/* I don't like that this has to have width, to ensure that all the floats work out correctly. */
-#mwe-upwiz-stepdiv-details .mwe-upwiz-data {
-	/* 230px + 2.5em is width of thumbnail on the left */
-	width: ~'calc( 100% - 230px - 2.5em )';
-}
-
-#mwe-upwiz-stepdiv-thanks .mwe-upwiz-data {
-	/* 120px + 2.5em is width of thumbnail on the left */
-	/* 0.5em is padding inside text input (2 * 0.25), 4px is border (2 x 2px) */
-	width: ~'calc( 100% - 120px - 2.5em - 0.5em - 4px )';
-}
-
 .mwe-upwiz-stepdiv {
 	position: relative;
 }
 
-#mwe-upwiz-tutorial {
-	text-align: center;
-}
-
 .mwe-small-print {
 	font-size: x-small;
-}
-
-.mwe-upwiz-deed.selected .mwe-upwiz-deed-name {
-	font-weight: bold;
-}
-
-.mwe-more-options,
-.mwe-upwiz-macro-deeds-return,
-.mwe-upwiz-deed-header-link {
-	cursor: pointer;
-}
-
-.mwe-upwiz-deed-license {
-	margin-left: 1.5em;
-}
-
-.mwe-upwiz-info-file {
-	padding-top: 2em;
-	padding-bottom: 2em;
-}
-
-.mwe-upwiz-info-file .oo-ui-fieldLayout-body {
-	margin-bottom: 1em;
-}
-
-.mwe-upwiz-details-fieldname {
-	font-size: 14px;
-	font-weight: bold;
-}
-
-.mwe-title {
-	font-family: sans-serif;
-	font-size: small;
-	width: 100%;
-}
-
-.mwe-upwiz-details-fieldname-input {
-	margin-bottom: 1em;
-}
-
-.mwe-upwiz-thirdparty-license {
-	margin-top: 8px;
-}
-
-.mwe-upwiz-deed-form-internal {
-	padding: 0.5em 0 1em 2em;
-}
-
-label.mwe-upwiz-copyright-info {
-	display: inline-block;
-	padding-left: 3px;
-	text-indent: 0;
-	padding-top: 2px;
-	width: 93%;
 }
 
 .mwe-upwiz-custom-deed {
@@ -470,63 +156,12 @@ a.mwe-upwiz-tooltip-link {
 	cursor: pointer;
 }
 
-input[ type='radio' ].mwe-upwiz-copyright-info-radio {
-	vertical-align: top;
-}
-
-.mwe-upwiz-details-more-options,
-.mwe-upwiz-details-copy-metadata,
-.mwe-upwiz-deed-license-group-head {
-	padding-left: 1.5em;
-	cursor: pointer;
-	outline: 0;
-	display: block;
-}
-
-.mwe-upwiz-deed-license-group-head.mw-collapsible-arrow,
-.mwe-upwiz-details-more-options.mw-collapsible-toggle,
-.mwe-upwiz-details-copy-metadata.mw-collapsible-toggle,
-.mwe-upwiz-deed-license-group-head.mw-collapsible-toggle {
-	/* Override jquery.makeCollapsible styles */
-	float: none;
-	/* Override mediawiki.icon styles */
-	background-position: left center;
-}
-
-.mwe-upwiz-deed-license-group-head {
-	margin-top: 10px;
-}
-
-.mwe-upwiz-deed-license-group-body {
-	padding-left: 3em;
-}
-
-.mwe-upwiz-license-custom {
-	overflow: hidden;
-
-	.oo-ui-buttonElement {
-		float: right;
-		width: 9em;
-		padding-left: 1em;
-		margin-right: 0;
-	}
-
-	.oo-ui-textInputWidget {
-		width: auto;
-		margin-right: 10em;
-	}
-}
-
-.mwe-upwiz-license-custom .oo-ui-textInputWidget textarea {
-	font-family: monospace, monospace;
-}
-
 .mwe-upwiz-thanks {
 	margin-bottom: 2em;
 }
 
 .mwe-readonly {
-	background-color: #fff;
+	background-color: @color-disabled;
 	padding: 0.25em;
 }
 
@@ -549,28 +184,21 @@ input[ type='radio' ].mwe-upwiz-copyright-info-radio {
 	border-radius: 2px;
 }
 
-.mwe-upwiz-deed-license-group-subhead {
-	color: #72777d;
-	margin-top: 0;
-	margin-bottom: 0;
-	margin-left: 1.5em;
-}
-
 .mwe-upwiz-details-texts {
 	padding: 0.5em;
 }
 
 .mwe-upwiz-objref-pick-image {
-	font-weight: bold;
+	font-weight: @font-weight-bold;
 }
 
 .mwe-upwiz-objref-pick-image input:disabled + label {
-	color: #72777d;
-	font-weight: normal;
+	color: @color-disabled;
+	font-weight: @font-weight-normal;
 }
 
 .mwe-upwiz-objref-notice-existing-image {
-	font-weight: bold;
+	font-weight: @font-weight-bold;
 }
 
 .mwe-upwiz-sign {
@@ -595,4 +223,35 @@ input[ type='radio' ].mwe-upwiz-copyright-info-radio {
 
 .mwe-upwiz-metadata-notice {
 	margin-top: 2em;
+}
+
+.mwe-upwiz-license-metadata {
+	margin-top: 3em;
+	padding: 1em 1em 1em ~'calc( 64px + 2.5em )';
+	border: @border-width-base @border-style-base @border-color-subtle;
+	white-space: pre-wrap;
+	/* @embed */
+	background: url( images/cc.svg ) no-repeat 1em 1em, url( images/zero.svg ) no-repeat ~'calc( 1.5em + 32px )' 1em;
+	background-size: 32px 32px;
+	background-color: @background-color-neutral-subtle;
+
+	@media screen and ( max-width: @min-width-breakpoint-tablet ) {
+		margin-top: 1em;
+		padding: 0.5em;
+		background: none;
+		background-color: @background-color-neutral-subtle;
+	}
+}
+
+#mwe-upwiz-details-error-count {
+	text-align: initial;
+	display: flex;
+	justify-content: end;
+	padding: 1em 0;
+}
+
+// wrap buttons to prevent ones with really long text (as is often the
+// case in e.g. German) to run off-screen
+#mwe-upwiz-content .oo-ui-buttonElement-button {
+	white-space: normal;
 }

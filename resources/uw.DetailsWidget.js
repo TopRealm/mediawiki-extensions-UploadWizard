@@ -6,18 +6,19 @@
 	 * This can be composed of multiple smaller widgets, but represents a single unit (e.g. a
 	 * "location" field could be composed of "latitude" and "longitude" inputs).
 	 *
+	 * @class
 	 * @extends OO.ui.Widget
 	 * @abstract
 	 */
 	uw.DetailsWidget = function UWDetailsWidget() {
-		uw.DetailsWidget.parent.call( this );
+		uw.DetailsWidget.super.call( this );
 	};
 	OO.inheritClass( uw.DetailsWidget, OO.ui.Widget );
 
 	/**
 	 * A 'change' event is emitted when the state of this widget (and the serialized value) changes.
 	 *
-	 * @event change
+	 * @event uw.DetailsWidget.change
 	 */
 
 	/**

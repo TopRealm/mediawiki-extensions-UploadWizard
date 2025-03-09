@@ -2,17 +2,18 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use Category;
-use Language;
+use InvalidArgumentException;
+use MediaWiki\Category\Category;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
-use MWException;
-use Parser;
-use ParserOptions;
-use ParserOutput;
-use RequestContext;
-use Title;
-use WANObjectCache;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Title\Title;
+use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\Database;
+use Wikimedia\Rdbms\SelectQueryBuilder;
 
 /**
  * Class that represents a single upload campaign.
@@ -75,6 +76,18 @@ class Campaign {
 	 */
 	protected $context = null;
 
+	/** @var WANObjectCache */
+	private $wanObjectCache;
+
+	/** @var \Wikimedia\Rdbms\IReadableDatabase */
+	private $dbr;
+
+	/** @var Parser */
+	private $parser;
+
+	/** @var \MediaWiki\Interwiki\InterwikiLookup */
+	private $interwikiLookup;
+
 	public static function newFromName( $name ) {
 		$campaignTitle = Title::makeTitleSafe( NS_CAMPAIGN, $name );
 		if ( $campaignTitle === null || !$campaignTitle->exists() ) {
@@ -85,11 +98,18 @@ class Campaign {
 	}
 
 	public function __construct( $title, $config = null, $context = null ) {
+		$services = MediaWikiServices::getInstance();
+		$this->wanObjectCache = $services->getMainWANObjectCache();
+		$this->dbr = $services->getDBLoadBalancerFactory()->getReplicaDatabase();
+		$this->parser = $services->getParser();
+		$this->interwikiLookup = $services->getInterwikiLookup();
+		$wikiPageFactory = $services->getWikiPageFactory();
+
 		$this->title = $title;
 		if ( $config === null ) {
-			$content = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title )->getContent();
+			$content = $wikiPageFactory->newFromTitle( $title )->getContent();
 			if ( !$content instanceof CampaignContent ) {
-				throw new MWException( 'Wrong content model' );
+				throw new InvalidArgumentException( 'Wrong content model' );
 			}
 			$this->config = $content->getJsonData();
 		} else {
@@ -140,31 +160,24 @@ class Campaign {
 	}
 
 	public function getTotalContributorsCount() {
-		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
+		$dbr = $this->dbr;
 		$fname = __METHOD__;
 
-		return $cache->getWithSetCallback(
-			$cache->makeKey( 'uploadwizard-campaign-contributors-count', $this->getName() ),
+		return $this->wanObjectCache->getWithSetCallback(
+			$this->wanObjectCache->makeKey( 'uploadwizard-campaign-contributors-count', $this->getName() ),
 			Config::getSetting( 'campaignStatsMaxAge' ),
-			function ( $oldValue, &$ttl, array &$setOpts ) use ( $fname ) {
-				$dbr = wfGetDB( DB_REPLICA );
+			function ( $oldValue, &$ttl, array &$setOpts ) use ( $fname, $dbr ) {
 				$setOpts += Database::getCacheSetOptions( $dbr );
 
-				$result = $dbr->select(
-					[ 'categorylinks', 'page', 'image' ],
-					[ 'count' => 'COUNT(DISTINCT img_actor)' ],
-					[ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ],
-					$fname,
-					[
-						'USE INDEX' => [ 'categorylinks' => 'cl_timestamp' ]
-					],
-					[
-						'page' => [ 'INNER JOIN', 'cl_from=page_id' ],
-						'image' => [ 'INNER JOIN', 'page_title=img_name' ]
-					]
-				);
-
-				return $result->current()->count;
+				return $dbr->newSelectQueryBuilder()
+					->select( [ 'count' => 'COUNT(DISTINCT img_actor)' ] )
+					->from( 'categorylinks' )
+					->join( 'page', null, 'cl_from=page_id' )
+					->join( 'image', null, 'page_title=img_name' )
+					->where( [ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ] )
+					->caller( $fname )
+					->useIndex( [ 'categorylinks' => 'cl_timestamp' ] )
+					->fetchField();
 			}
 		);
 	}
@@ -175,19 +188,16 @@ class Campaign {
 	 * @return Title[]
 	 */
 	public function getUploadedMedia( $limit = 24 ) {
-		$dbr = wfGetDB( DB_REPLICA );
-		$result = $dbr->select(
-			[ 'categorylinks', 'page' ],
-			[ 'cl_from', 'page_namespace', 'page_title' ],
-			[ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ],
-			__METHOD__,
-			[
-				'ORDER BY' => 'cl_timestamp DESC',
-				'LIMIT' => $limit,
-				'USE INDEX' => [ 'categorylinks' => 'cl_timestamp' ]
-			],
-			[ 'page' => [ 'INNER JOIN', 'cl_from=page_id' ] ]
-		);
+		$result = $this->dbr->newSelectQueryBuilder()
+			->select( [ 'cl_from', 'page_namespace', 'page_title' ] )
+			->from( 'categorylinks' )
+			->join( 'page', null, 'cl_from=page_id' )
+			->where( [ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ] )
+			->orderBy( 'cl_timestamp', SelectQueryBuilder::SORT_DESC )
+			->limit( $limit )
+			->useIndex( [ 'categorylinks' => 'cl_timestamp' ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		$images = [];
 		foreach ( $result as $row ) {
@@ -239,7 +249,7 @@ class Campaign {
 		$parserOptions->setUserLang( $lang );
 		$parserOptions->setTargetLanguage( $lang );
 
-		$output = MediaWikiServices::getInstance()->getParser()->parse(
+		$output = $this->parser->parse(
 			$value, $this->getTitle(), $parserOptions
 		);
 		$parsed = $output->getText( [
@@ -292,7 +302,7 @@ class Campaign {
 	 * @param Language|null $lang
 	 * @return array
 	 */
-	public function getParsedConfig( Language $lang = null ) {
+	public function getParsedConfig( ?Language $lang = null ) {
 		if ( $lang === null ) {
 			$lang = $this->context->getLanguage();
 		}
@@ -301,17 +311,16 @@ class Campaign {
 		// we then check to make sure that it is the latest version - by verifying that its
 		// timestamp is greater than or equal to the timestamp of the last time an invalidate was
 		// issued.
-		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-		$memKey = $cache->makeKey(
+		$memKey = $this->wanObjectCache->makeKey(
 			'uploadwizard-campaign',
 			$this->getName(),
 			'parsed-config',
 			$lang->getCode()
 		);
-		$depKeys = [ $this->makeInvalidateTimestampKey( $cache ) ];
+		$depKeys = [ $this->makeInvalidateTimestampKey( $this->wanObjectCache ) ];
 
 		$curTTL = null;
-		$memValue = $cache->get( $memKey, $curTTL, $depKeys );
+		$memValue = $this->wanObjectCache->get( $memKey, $curTTL, $depKeys );
 		if ( is_array( $memValue ) && $curTTL > 0 ) {
 			$this->parsedConfig = $memValue['config'];
 		}
@@ -320,50 +329,50 @@ class Campaign {
 			$parsedConfig = [];
 			foreach ( $this->config as $key => $value ) {
 				switch ( $key ) {
-				case "title":
-				case "description":
-					$parsedConfig[$key] = $this->parseValue( $value, $lang );
-					break;
-				case "display":
-					foreach ( $value as $option => $optionValue ) {
-						if ( is_array( $optionValue ) ) {
-							$parsedConfig['display'][$option] = $this->parseArrayValues(
-								$optionValue,
-								$lang,
-								[ 'label' ]
-							);
-						} else {
-							$parsedConfig['display'][$option] = $this->parseValue( $optionValue, $lang );
+					case "title":
+					case "description":
+						$parsedConfig[$key] = $this->parseValue( $value, $lang );
+						break;
+					case "display":
+						foreach ( $value as $option => $optionValue ) {
+							if ( is_array( $optionValue ) ) {
+								$parsedConfig['display'][$option] = $this->parseArrayValues(
+									$optionValue,
+									$lang,
+									[ 'label' ]
+								);
+							} else {
+								$parsedConfig['display'][$option] = $this->parseValue( $optionValue, $lang );
+							}
 						}
-					}
-					break;
-				case "fields":
-					$parsedConfig['fields'] = [];
-					foreach ( $value as $field ) {
-						$parsedConfig['fields'][] = $this->parseArrayValues(
-							$field,
-							$lang,
-							[ 'label', 'options' ]
-						);
-					}
-					break;
-				case "whileActive":
-				case "afterActive":
-				case "beforeActive":
-					if ( array_key_exists( 'display', $value ) ) {
-						$value['display'] = $this->parseArrayValues( $value['display'], $lang );
-					}
-					$parsedConfig[$key] = $value;
-					break;
-				default:
-					$parsedConfig[$key] = $value;
-					break;
+						break;
+					case "fields":
+						$parsedConfig['fields'] = [];
+						foreach ( $value as $field ) {
+							$parsedConfig['fields'][] = $this->parseArrayValues(
+								$field,
+								$lang,
+								[ 'label', 'options' ]
+							);
+						}
+						break;
+					case "whileActive":
+					case "afterActive":
+					case "beforeActive":
+						if ( array_key_exists( 'display', $value ) ) {
+							$value['display'] = $this->parseArrayValues( $value['display'], $lang );
+						}
+						$parsedConfig[$key] = $value;
+						break;
+					default:
+						$parsedConfig[$key] = $value;
+						break;
 				}
 			}
 
 			$this->parsedConfig = $parsedConfig;
 
-			$cache->set( $memKey, [ 'timestamp' => time(), 'config' => $parsedConfig ] );
+			$this->wanObjectCache->set( $memKey, [ 'timestamp' => time(), 'config' => $parsedConfig ] );
 		}
 
 		$uwDefaults = Config::getSetting( 'defaults' );
@@ -425,8 +434,7 @@ class Campaign {
 	 * for the campaign will be regenerated the next time there is a read.
 	 */
 	public function invalidateCache() {
-		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-		$cache->touchCheckKey( $this->makeInvalidateTimestampKey( $cache ) );
+		$this->wanObjectCache->touchCheckKey( $this->makeInvalidateTimestampKey( $this->wanObjectCache ) );
 	}
 
 	/**
@@ -451,7 +459,7 @@ class Campaign {
 	 * @return bool
 	 */
 	private function isActive() {
-		$today = strtotime( date( "Y-m-d" ) );
+		$now = time();
 		$start = array_key_exists(
 			'start', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['start'] ) : null;
@@ -459,7 +467,7 @@ class Campaign {
 			'end', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['end'] ) : null;
 
-		return ( $start === null || $start <= $today ) && ( $end === null || $end > $today );
+		return ( $start === null || $start <= $now ) && ( $end === null || $end > $now );
 	}
 
 	/**
@@ -469,12 +477,12 @@ class Campaign {
 	 * @return bool
 	 */
 	private function wasActive() {
-		$today = strtotime( date( "Y-m-d" ) );
+		$now = time();
 		$start = array_key_exists(
 			'start', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['start'] ) : null;
 
-		return ( $start === null || $start <= $today ) && !$this->isActive();
+		return ( $start === null || $start <= $now ) && !$this->isActive();
 	}
 
 	/**
@@ -486,10 +494,9 @@ class Campaign {
 	private function getButtonHrefByObjectReference( $objRef ) {
 		$arrObjRef = explode( '|', $objRef );
 		if ( count( $arrObjRef ) > 1 ) {
-			list( $wiki, $title ) = $arrObjRef;
-			$lookup = MediaWikiServices::getInstance()->getInterwikiLookup();
-			if ( $lookup->isValidInterwiki( $wiki ) ) {
-				return str_replace( '$1', $title, $lookup->fetch( $wiki )->getURL() );
+			[ $wiki, $title ] = $arrObjRef;
+			if ( $this->interwikiLookup->isValidInterwiki( $wiki ) ) {
+				return str_replace( '$1', $title, $this->interwikiLookup->fetch( $wiki )->getURL() );
 			}
 		}
 		return false;

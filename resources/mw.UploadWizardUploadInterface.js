@@ -2,9 +2,8 @@
 	/**
 	 * Create an interface fragment corresponding to a file input, suitable for Upload Wizard.
 	 *
-	 * @class mw.UploadWizardUploadInterface
-	 * @mixins OO.EventEmitter
-	 * @constructor
+	 * @class
+	 * @mixes OO.EventEmitter
 	 * @param {mw.UploadWizardUpload} upload
 	 */
 	mw.UploadWizardUploadInterface = function MWUploadWizardUploadInterface( upload ) {
@@ -35,6 +34,7 @@
 				$( '<div>' ).addClass( 'mwe-upwiz-file-preview' ),
 				$( '<div>' ).addClass( 'mwe-upwiz-file-texts' ).append(
 					$( '<div>' ).addClass( 'mwe-upwiz-visible-file-filename-text' ),
+					$( '<div>' ).addClass( 'mwe-upwiz-file-license' ),
 					$( '<div>' ).addClass( 'mwe-upwiz-file-status-line' ).append(
 						$( '<div>' ).addClass( 'mwe-upwiz-file-status' )
 					)
@@ -48,7 +48,7 @@
 			flags: 'destructive',
 			icon: 'trash',
 			framed: false
-		} ).on( 'click', function () {
+		} ).on( 'click', () => {
 			ui.emit( 'upload-removed' );
 		} );
 
@@ -73,7 +73,7 @@
 		// this.progressBar = ( no progress bar for individual uploads yet )
 		// we bind to the ui div since .off() doesn't work for non-DOM objects
 		// TODO Convert this to an OO.EventEmitter, and use OOjs events
-		this.$div.on( 'transportProgressEvent', function () {
+		this.$div.on( 'transportProgressEvent', () => {
 			ui.showTransportProgress();
 		} );
 	};
@@ -87,15 +87,17 @@
 	 *  Omit to hide the indicator
 	 */
 	mw.UploadWizardUploadInterface.prototype.showIndicator = function ( status ) {
-		this.$spinner.hide();
-		this.statusMessage.toggle( false );
-
-		if ( status === 'progress' ) {
-			this.$spinner.show();
-		} else if ( status ) {
-			this.statusMessage.toggle( true ).setType( status );
-		}
+		var progress = status === 'progress';
+		this.$spinner.toggle( progress );
+		this.statusMessage.toggle( status && !progress ).setType( status );
 		this.$indicator.toggleClass( 'mwe-upwiz-file-indicator-visible', !!status );
+	};
+
+	/**
+	 * @param {string} license License text
+	 */
+	mw.UploadWizardUploadInterface.prototype.setLicenseText = function ( license ) {
+		this.$div.find( '.mwe-upwiz-file-license' ).text( license );
 	};
 
 	/**
@@ -212,7 +214,7 @@
 		var $preview = this.$div.find( '.mwe-upwiz-file-preview' ),
 			deferred = $.Deferred();
 		// This must match the CSS dimensions of .mwe-upwiz-file-preview
-		this.upload.getThumbnail( 120, 120 ).done( function ( thumb ) {
+		this.upload.getThumbnail( 120, 120 ).done( ( thumb ) => {
 			mw.UploadWizard.placeThumbnail( $preview, thumb );
 			deferred.resolve();
 		} );

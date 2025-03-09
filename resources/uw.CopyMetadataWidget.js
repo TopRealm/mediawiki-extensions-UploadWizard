@@ -4,46 +4,81 @@
 	 * Metadata copier in UploadWizard's "Details" step form.
 	 *
 	 * @extends OO.ui.Widget
-	 * @constructor
+	 * @class
 	 * @param {Object} [config] Configuration options
-	 * @cfg {mw.UploadWizardUpload} copyFrom Upload to copy the details from
-	 * @cfg {mw.UploadWizardUpload[]} copyTo Uploads to copy the details to
+	 * @param {mw.UploadWizardUpload} config.copyFrom Upload to copy the details from
+	 * @param {mw.UploadWizardUpload[]} config.copyTo Uploads to copy the details to
+	 * @param {mw.UploadWizardUpload} config.captionsAvailable True if captions are available
 	 */
 	uw.CopyMetadataWidget = function UWCopyMetadataWidget( config ) {
-		var metadataType, defaultStatus, copyMetadataMsg,
+		var self = this,
+			metadataTypes = uw.CopyMetadataWidget.static.copyMetadataTypes,
+			metadataType, defaultStatus, copyMetadataMsg,
 			checkboxes = [],
-			$copyMetadataWrapperDiv = $( '<div>' ),
-			$copyMetadataDiv = $( '<div>' );
+			propertyCopyLabels = mw.config.get( 'upwizPropertyCopyLabels' ) || {},
+			statementCheckboxes = {};
 
-		uw.CopyMetadataWidget.parent.call( this );
+		uw.CopyMetadataWidget.super.call( this );
 
 		this.copyFrom = config.copyFrom;
 		this.copyTo = config.copyTo;
 		this.savedSerializedData = [];
 
-		for ( metadataType in uw.CopyMetadataWidget.static.copyMetadataTypes ) {
-			if ( Object.prototype.hasOwnProperty.call( uw.CopyMetadataWidget.static.copyMetadataTypes, metadataType ) ) {
-				defaultStatus = uw.CopyMetadataWidget.static.copyMetadataTypes[ metadataType ];
-				// mwe-upwiz-copy-title, mwe-upwiz-copy-caption, mwe-upwiz-copy-description,
-				// mwe-upwiz-copy-date, mwe-upwiz-copy-categories, mwe-upwiz-copy-location,
-				// mwe-upwiz-copy-other
-				copyMetadataMsg = mw.message( 'mwe-upwiz-copy-' + metadataType ).text();
+		metadataTypes.statements.properties = this.copyFrom.details.getStatementProperties();
 
-				checkboxes.push( new OO.ui.CheckboxMultioptionWidget( {
-					data: metadataType,
-					label: copyMetadataMsg,
-					selected: defaultStatus
-				} ) );
+		for ( metadataType in metadataTypes ) {
+			if ( metadataType !== 'statements' ) {
+				defaultStatus = metadataTypes[ metadataType ];
+				// The following messages are used here:
+				// * mwe-upwiz-copy-title-label
+				// * mwe-upwiz-copy-caption-label
+				// * mwe-upwiz-copy-description-label
+				// * mwe-upwiz-copy-date-label
+				// * mwe-upwiz-copy-categories-label
+				// * mwe-upwiz-copy-location-label
+				// * mwe-upwiz-copy-other-label
+				copyMetadataMsg = mw.message( 'mwe-upwiz-copy-' + metadataType + '-label' ).text();
+
+				if ( metadataType === 'caption' && !config.captionsAvailable ) {
+					// do nothing - we don't want an option to copy captions if captions turned off
+				} else {
+					checkboxes.push( new OO.ui.CheckboxMultioptionWidget( {
+						data: metadataType,
+						label: copyMetadataMsg,
+						selected: defaultStatus
+					} ) );
+				}
+			} else {
+				metadataTypes.statements.properties.forEach( ( property ) => {
+					statementCheckboxes[ property.id ] = new OO.ui.CheckboxMultioptionWidget( {
+						data: 'statements.' + property.id,
+						label: propertyCopyLabels[ property.id ] || property.id,
+						selected: metadataTypes.statements.checked
+					} );
+					checkboxes.push( statementCheckboxes[ property.id ] );
+
+					if ( !( property.id in propertyCopyLabels ) ) {
+						// for statement inputs added by a campaign we probably don't have a defined label, so grab
+						// the label from wikibase and add the checkbox once we have it
+						self.copyFrom.details.getPropertyLabel( property.id ).then( ( label ) => {
+							statementCheckboxes[ property.id ].setLabel( label );
+						} );
+					}
+				} );
 			}
 		}
 
-		this.$success = $( '<span>' );
+		this.$success = $( '<span>' ).addClass( 'mwe-upwiz-copy-metadata-success' );
 		this.checkboxesWidget = new OO.ui.CheckboxMultiselectWidget( {
 			items: checkboxes
 		} );
+
 		this.copyButton = new OO.ui.ButtonWidget( {
-			label: mw.message( 'mwe-upwiz-copy-metadata-button' ).text(),
-			flags: [ 'progressive' ]
+			label: $( '<span>' ).append(
+				new OO.ui.IconWidget( { icon: 'copy' } ).$element,
+				' ',
+				mw.message( 'mwe-upwiz-copy-metadata-button-text' ).text()
+			)
 		} );
 		this.undoButton = new OO.ui.ButtonWidget( {
 			label: mw.message( 'mwe-upwiz-copy-metadata-button-undo' ).text()
@@ -60,24 +95,15 @@
 		} );
 
 		this.undoButton.toggle( false );
-		$copyMetadataDiv.append(
+		this.$element.append(
+			$( '<div>' )
+				.addClass( 'mwe-upwiz-copy-metadata-subtitle' )
+				.text( mw.message( 'mwe-upwiz-copy-metadata-subtitle' ).text() ),
 			this.checkboxesWidget.$element,
 			this.copyButton.$element,
 			this.undoButton.$element,
 			this.$success
 		);
-
-		$copyMetadataWrapperDiv
-			.append(
-				$( '<a>' ).text( mw.msg( 'mwe-upwiz-copy-metadata' ) )
-					.addClass( 'mwe-upwiz-details-copy-metadata mw-collapsible-toggle mw-collapsible-arrow' ),
-				$copyMetadataDiv.addClass( 'mw-collapsible-content' )
-			)
-			.makeCollapsible( { collapsed: true } );
-
-		this.$element
-			.addClass( 'mwe-upwiz-copyMetadataWidget' )
-			.append( $copyMetadataWrapperDiv );
 	};
 	OO.inheritClass( uw.CopyMetadataWidget, OO.ui.Widget );
 
@@ -94,6 +120,7 @@
 		caption: true,
 		description: true,
 		date: false,
+		statements: { checked: true },
 		categories: true,
 		location: false,
 		other: true
@@ -149,19 +176,47 @@
 	 * @param {string[]} metadataTypes Types to copy, as defined in the copyMetadataTypes property
 	 */
 	uw.CopyMetadataWidget.prototype.copyMetadata = function ( metadataTypes ) {
+		uw.CopyMetadataWidget.copyMetadataSerialized(
+			metadataTypes,
+			this.copyFrom.details.getSerialized(),
+			this.copyTo.length,
+			( i, sourceValue ) => {
+				this.savedSerializedData[ i ] = this.copyTo[ i ].details.getSerialized();
+				this.copyTo[ i ].details.setSerialized( sourceValue );
+			} );
+	};
+
+	/**
+	 * Copy metadata from the first upload to other uploads.
+	 *
+	 * @param {string[]} metadataTypes Types to copy, as defined in the copyMetadataTypes property
+	 * @param {Object} serialized copyFrom.details.getSerialized
+	 * @param {number} length copyTo.length
+	 * @param {Function} callback callback(i, sourceValue)
+	 */
+	uw.CopyMetadataWidget.copyMetadataSerialized = function ( metadataTypes, serialized, length, callback ) {
 		var titleZero, matches, i,
-			uploads = this.copyTo,
-			sourceUpload = this.copyFrom,
-			serialized = sourceUpload.details.getSerialized(),
 			// Values to copy
 			sourceValue = {},
 			// Checks for extra behaviors
 			copyingTitle = false,
-			copyingOther = false;
+			copyingOther = false,
+			typeParts;
 
 		// Filter serialized data to only the types we want to copy
-		metadataTypes.forEach( function ( type ) {
-			sourceValue[ type ] = serialized[ type ];
+		metadataTypes.forEach( ( type ) => {
+			typeParts = type.split( '.' );
+			if ( typeParts.length === 2 ) {
+				if ( serialized[ typeParts[ 0 ] ][ typeParts[ 1 ] ] ) {
+					if ( !sourceValue[ typeParts[ 0 ] ] ) {
+						sourceValue[ typeParts[ 0 ] ] = {};
+					}
+					sourceValue[ typeParts[ 0 ] ][ typeParts[ 1 ] ] =
+						serialized[ typeParts[ 0 ] ][ typeParts[ 1 ] ];
+				}
+			} else {
+				sourceValue[ type ] = serialized[ type ];
+			}
 			copyingTitle = copyingTitle || type === 'title';
 			copyingOther = copyingOther || type === 'other';
 		} );
@@ -172,16 +227,17 @@
 		}
 
 		if ( copyingTitle ) {
-			titleZero = sourceValue.title.title;
+			titleZero = sourceValue.title.title.trim();
 			// Add number suffix to first title if no numbering present
-			matches = titleZero.match( /(\D+)(\d{1,3})(\.\D*)?$/ );
+
+			matches = titleZero.match( /(\D+)(\d{1,3})([.)]\D*)?$/ );
 			if ( matches === null ) {
 				titleZero = titleZero + ' 01';
 			}
 		}
 
 		// And apply
-		for ( i = 0; i < uploads.length; i++ ) {
+		for ( i = 0; i < length; i++ ) {
 			if ( copyingTitle ) {
 				// Overwrite remaining title inputs with first title + increment of rightmost
 				// number in the title. Note: We ignore numbers with more than three digits, because these
@@ -189,7 +245,7 @@
 				// numbers.
 				sourceValue.title.title = titleZero.replace( /(\D+)(\d{1,3})(\D*)$/,
 					// eslint-disable-next-line no-loop-func
-					function ( str, m1, m2, m3 ) {
+					( str, m1, m2, m3 ) => {
 						var newstr = String( +m2 + i );
 						return m1 + new Array( m2.length + 1 - newstr.length )
 							.join( '0' ) + newstr + m3;
@@ -197,8 +253,7 @@
 				);
 			}
 
-			this.savedSerializedData[ i ] = uploads[ i ].details.getSerialized();
-			uploads[ i ].details.setSerialized( sourceValue );
+			callback( i, sourceValue );
 		}
 	};
 

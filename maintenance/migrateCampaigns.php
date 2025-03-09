@@ -33,7 +33,8 @@ if ( $IP === false ) {
 require_once "$IP/maintenance/Maintenance.php";
 
 use MediaWiki\Extension\UploadWizard\CampaignContent;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Maintenance\Maintenance;
+use MediaWiki\Title\Title;
 
 /**
  * Maintenance script to migrate campaigns from older, database table
@@ -108,12 +109,12 @@ class MigrateCampaigns extends Maintenance {
 	private function getConfigFromDB( $id ) {
 		$config = [];
 
-		$confProps = $this->dbr->select(
-			'uw_campaign_conf',
-			[ 'cc_property', 'cc_value' ],
-			[ 'cc_campaign_id' => $id ],
-			__METHOD__
-		);
+		$confProps = $this->dbr->newSelectQueryBuilder()
+			->select( [ 'cc_property', 'cc_value' ] )
+			->from( 'uw_campaign_conf' )
+			->where( [ 'cc_campaign_id' => $id ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		foreach ( $confProps as $confProp ) {
 			if ( in_array( $confProp->cc_property, self::OLD_NUMBER_CONFIGS ) ) {
@@ -161,15 +162,13 @@ class MigrateCampaigns extends Maintenance {
 	private function trimArray( $array ) {
 		$newArray = [];
 		foreach ( $array as $key => $value ) {
-			if ( gettype( $value ) === 'array' ) {
+			if ( is_array( $value ) ) {
 				$trimmedValue = $this->trimArray( $value );
 				if ( $trimmedValue !== [] ) {
 					$newArray[$key] = $trimmedValue;
 				}
-			} else {
-				if ( $value !== null ) {
-					$newArray[$key] = $value;
-				}
+			} elseif ( $value !== null ) {
+				$newArray[$key] = $value;
 			}
 		}
 		return $newArray;
@@ -255,23 +254,27 @@ class MigrateCampaigns extends Maintenance {
 	}
 
 	public function execute() {
+		$services = $this->getServiceContainer();
+
 		$username = $this->getOption( 'user', 'Maintenance script' );
 
-		$this->dbr = wfGetDB( DB_PRIMARY );
-		$campaigns = $this->dbr->select(
-			'uw_campaigns',
-			'*',
-			[],
-			__METHOD__
-		);
+		$this->dbr = $services->getDBLoadBalancerFactory()->getPrimaryDatabase();
+		$campaigns = $this->dbr->newSelectQueryBuilder()
+			->select( '*' )
+			->from( 'uw_campaigns' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		if ( !$campaigns->numRows() ) {
 			$this->output( "Nothing to migrate.\n" );
 			return;
 		}
 
-		$user = User::newFromName( $username );
-		$wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
+		$user = $services->getUserFactory()->newFromName( $username );
+		if ( !$user ) {
+			$this->fatalError( 'invalid username.' );
+		}
+		$wikiPageFactory = $services->getWikiPageFactory();
 		foreach ( $campaigns as $campaign ) {
 			$oldConfig = $this->getConfigFromDB( $campaign->campaign_id );
 			$newConfig = $this->getConfigForJSON( $campaign, $oldConfig );

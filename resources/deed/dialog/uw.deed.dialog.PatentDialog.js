@@ -20,7 +20,7 @@
 	 * @param {Object} config Dialog config
 	 * @param {Object} uwConfig UploadWizard config
 	 * @param {mw.UploadWizardUpload[]} uploads
-	 * @constructor
+	 * @class
 	 */
 	uw.PatentDialog = function PatentDialog( config, uwConfig, uploads ) {
 		uw.PatentDialog.super.call( this, config );
@@ -57,7 +57,7 @@
 
 		uw.PatentDialog.super.prototype.initialize.apply( this, arguments );
 
-		this.uploads.forEach( function ( upload ) {
+		this.uploads.forEach( ( upload ) => {
 			filenames.push(
 				// use given title (if available already) or fall back to filename
 				upload.details ? upload.details.getTitle().getMainText() : upload.title.getMainText()
@@ -77,8 +77,14 @@
 			panels.$element.append( this.getWarrantyLayout().$element );
 		}
 
-		if ( this.panels.indexOf( 'license' ) !== -1 ) {
-			panels.$element.append( this.getLicenseLayout().$element );
+		if (
+			this.panels.indexOf( 'license-ownership' ) !== -1 ||
+			this.panels.indexOf( 'license-grant' ) !== -1
+		) {
+			panels.$element.append( this.getLicenseLayout(
+				this.panels.indexOf( 'license-ownership' ) !== -1,
+				this.panels.indexOf( 'license-grant' ) !== -1
+			).$element );
 		}
 
 		this.checkbox = new OO.ui.CheckboxInputWidget();
@@ -107,18 +113,31 @@
 	};
 
 	/**
+	 * @param {boolean} ownership
+	 * @param {boolean} grant
 	 * @return {OO.ui.PanelLayout}
 	 */
-	uw.PatentDialog.prototype.getLicenseLayout = function () {
+	uw.PatentDialog.prototype.getLicenseLayout = function ( ownership, grant ) {
 		var layout = new OO.ui.PanelLayout( { padded: true, expanded: false } );
 
-		layout.$element.append(
-			$( '<strong>' ).text( mw.msg( 'mwe-upwiz-patent-dialog-title-license' ) ),
-			$( '<p>' ).text( mw.msg( 'mwe-upwiz-patent-dialog-text-license', this.uploads.length ) ),
-			$( '<a>' )
-				.text( mw.msg( 'mwe-upwiz-patent-dialog-link-license' ) )
-				.attr( { target: '_blank', href: this.config.patents.url.license } )
-		);
+		if ( ownership ) {
+			layout.$element.append(
+				$( '<strong>' ).text( mw.msg( 'mwe-upwiz-patent-dialog-title-license' ) ),
+				$( '<p>' ).text( mw.msg( 'mwe-upwiz-patent-dialog-text-license', this.uploads.length ) ),
+				$( '<a>' )
+					.text( mw.msg( 'mwe-upwiz-patent-dialog-link-license' ) )
+					.attr( { target: '_blank', href: this.config.patents.url.license } )
+			);
+		}
+
+		if ( grant ) {
+			layout.$element.append(
+				$( '<p>' ).text( mw.msg( 'mwe-upwiz-patent-dialog-text-license-grant', this.uploads.length ) ),
+				$( '<a>' )
+					.text( mw.msg( 'mwe-upwiz-patent-dialog-link-license-grant' ) )
+					.attr( { target: '_blank', href: this.config.patents.url.legalcode } )
+			);
+		}
 
 		return layout;
 	};
@@ -157,7 +176,7 @@
 		if ( action === '' ) {
 			this.emit( 'disagree' );
 		} else if ( action === 'confirm' ) {
-			return new OO.ui.Process( function () {
+			return new OO.ui.Process( () => {
 				dialog.emit( 'agree' );
 				dialog.close( { action: action } );
 			} );

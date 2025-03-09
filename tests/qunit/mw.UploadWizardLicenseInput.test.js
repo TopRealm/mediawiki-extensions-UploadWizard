@@ -6,14 +6,15 @@ QUnit.module( 'ext.uploadWizardLicenseInput', QUnit.newMwEnvironment( {
 					msg: 'mwe-upwiz-license-cc-by-sa-3.0',
 					icons: [ 'cc-by', 'cc-sa' ],
 					url: '//creativecommons.org/licenses/by-sa/3.0/',
-					languageCodePrefix: 'deed.'
+					languageCodePrefix: 'deed.',
+					availableLanguages: [ 'ar', 'en', 'fr' ]
 				}
 			}
 		};
 	}
 } ) );
 
-QUnit.test( 'Smoke test', function ( assert ) {
+QUnit.test( 'Smoke test', ( assert ) => {
 	var config = { type: 'or', licenses: [] };
 	var $fixture = $( '<div>' );
 	var uwLicenseInput = new mw.UploadWizardLicenseInput( config );
@@ -21,7 +22,7 @@ QUnit.test( 'Smoke test', function ( assert ) {
 	assert.true( !!uwLicenseInput, 'LicenseInput object created !' );
 } );
 
-QUnit.test( 'createInputs()', function ( assert ) {
+QUnit.test( 'createInputs()', ( assert ) => {
 	var config = { type: 'or', licenses: [ 'cc-by-sa-3.0' ] };
 	var $fixture = $( '<div>' );
 
@@ -37,9 +38,10 @@ QUnit.test( 'createInputs()', function ( assert ) {
 	assert.strictEqual( $label.length, 1, 'Label created.' );
 } );
 
-QUnit.test( 'createGroupedInputs()', function ( assert ) {
+QUnit.test( 'createGroupedInputs()', ( assert ) => {
 	var config = {
 		type: 'or',
+		defaults: [ 'cc-by-sa-3.0' ],
 		licenseGroups: [
 			{
 				head: 'mwe-upwiz-license-cc-head',
@@ -51,6 +53,7 @@ QUnit.test( 'createGroupedInputs()', function ( assert ) {
 	var $fixture = $( '<div>' );
 
 	var uwLicenseInput = new mw.UploadWizardLicenseInput( config );
+	uwLicenseInput.setDefaultValues();
 	$fixture.append( uwLicenseInput.$element );
 
 	// Check license group is there

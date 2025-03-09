@@ -33,65 +33,38 @@
 		);
 
 		this.stepName = 'deeds';
-
-		this.deeds = {};
 	};
 
 	OO.inheritClass( uw.controller.Deed, uw.controller.Step );
 
 	uw.controller.Deed.prototype.moveNext = function () {
-		var
-			deedController = this,
-			valid, fields, validityPromises;
+		var deedChoosers = this.getUniqueDeedChoosers( this.uploads );
 
-		if ( !this.deedChooser ) {
+		if ( deedChoosers.length === 0 ) {
 			uw.controller.Step.prototype.moveNext.call( this );
 			return;
 		}
 
-		valid = this.deedChooser.valid();
-		if ( valid ) {
-			fields = this.deedChooser.deed.getFields();
-			validityPromises = fields.map( function ( fieldLayout ) {
-				// Update any error/warning messages
-				return fieldLayout.checkValidity( true );
+		this.valid( true )
+			.always( ( errors, warnings, notices ) => {
+				this.ui.showErrors( errors, warnings, notices );
+			} )
+			.done( () => {
+				uw.controller.Step.prototype.moveNext.call( this );
 			} );
-			if ( validityPromises.length === 1 ) {
-				// validityPromises will hold all promises for all uploads;
-				// adding a bogus promise (no warnings & errors) to
-				// ensure $.when always resolves with an array of multiple
-				// results (if there's just 1, it would otherwise have just
-				// that one's arguments, instead of a multi-dimensional array
-				// of upload warnings & failures)
-				validityPromises.push( $.Deferred().resolve( [], [] ).promise() );
-			}
-
-			$.when.apply( $, validityPromises ).then( function () {
-				// `arguments` will be an array of all fields, with their warnings & errors
-				// e.g. `[[something], []], [[], [something]]` for 2 fields, where the first one has
-				// a warning and the last one an error
-
-				// TODO Handle warnings with a confirmation dialog
-
-				var i;
-				for ( i = 0; i < arguments.length; i++ ) {
-					if ( arguments[ i ][ 1 ].length ) {
-						// One of the fields has errors; refuse to proceed!
-						return;
-					}
-				}
-
-				uw.controller.Step.prototype.moveNext.call( deedController );
-			} );
-		}
 	};
 
 	uw.controller.Deed.prototype.unload = function () {
-		var deedController = this;
+		var deedChoosers = this.getUniqueDeedChoosers( this.uploads );
 		uw.controller.Step.prototype.unload.call( this );
 
-		Object.keys( this.deeds ).forEach( function ( name ) {
-			deedController.deeds[ name ].unload();
+		// serialize the first deed so we can use it to pre-populate the choices if someone is
+		// uploading files in batches
+		this.uploadedDeedSerialization =
+			deedChoosers[ Object.keys( deedChoosers )[ 0 ] ].getSerialized();
+
+		deedChoosers.forEach( ( deedChooser ) => {
+			deedChooser.remove();
 		} );
 	};
 
@@ -101,12 +74,38 @@
 	 * @param {mw.UploadWizardUpload[]} uploads
 	 */
 	uw.controller.Deed.prototype.load = function ( uploads ) {
-		var customDeed, previousDeed, fromStepName, showDeed;
-
-		showDeed = uploads.some( function ( upload ) {
-			fromStepName = upload.state;
-			return !upload.file.fromURL;
-		} );
+		var self = this,
+			// select "provide same information for all files" by default
+			defaultDeedInterface = 'common',
+			localUploads = uploads.filter( ( upload ) => {
+				var deed;
+				if ( upload.file.fromURL ) {
+					// external uploads should get a custom deed...
+					deed = new uw.deed.Custom( self.config, upload );
+					upload.deedChooser = new mw.UploadWizardDeedChooser(
+						self.config,
+						{ [ deed.name ]: deed },
+						[ upload ]
+					);
+					upload.deedChooser.selectDeed( deed );
+					// ... and be filtered out of the list for which to select a license
+					return false;
+				}
+				return true;
+			} ),
+			// figure out how many unique deed choosers there were, so
+			// we can restore the same (common/individual) interface
+			uniqueExistingDeedChoosers = this.getUniqueDeedChoosers( localUploads ),
+			// grab a serialized copy of previous deeds' details (if any)
+			serializedDeeds = localUploads.reduce( ( map, upload ) => {
+				if ( upload.deedChooser ) {
+					map[ upload.getFilename() ] = upload.deedChooser.getSerialized();
+				}
+				return map;
+			}, {} ),
+			showDeed = localUploads.length > 0,
+			fromStepName = uploads[ 0 ].state,
+			multiDeedRadio;
 
 		uw.controller.Step.prototype.load.call( this, uploads );
 
@@ -124,44 +123,111 @@
 			return;
 		}
 
-		// grab a serialized copy of previous deeds' details (if any)
-		if ( this.deedChooser ) {
-			previousDeed = this.deedChooser.getSerialized();
-		}
-
-		this.deeds = mw.UploadWizard.getLicensingDeeds( this.uploads, this.config );
+		multiDeedRadio = new OO.ui.RadioSelectWidget( {
+			classes: [ 'mwe-upwiz-source-multiple' ],
+			items: [
+				new OO.ui.RadioOptionWidget( {
+					label: mw.message(
+						'mwe-upwiz-source-multiple-label-common',
+						localUploads.length,
+						mw.user
+					).parse(),
+					data: 'common'
+				} ),
+				new OO.ui.RadioOptionWidget( {
+					label: mw.message(
+						'mwe-upwiz-source-multiple-label-individual',
+						localUploads.length,
+						mw.user
+					).parse(),
+					data: 'individual'
+				} )
+			]
+		} );
 
 		// if we have multiple uploads, also give them the option to set
 		// licenses individually
-		if ( this.uploads.length > 1 && this.shouldShowIndividualDeed( this.config ) ) {
-			customDeed = new uw.deed.Custom( this.config );
-			this.deeds[ customDeed.name ] = customDeed;
+		if ( localUploads.length > 1 && this.shouldShowIndividualDeed( this.config ) ) {
+			this.ui.showMultiDeedRadio( multiDeedRadio );
+
+			if ( uniqueExistingDeedChoosers.length > 1 ) {
+				// we also had more than 1 deed in the past, so default
+				// to loading the individual deed selection
+				defaultDeedInterface = 'individual';
+			}
 		}
 
-		this.deedChooser = new mw.UploadWizardDeedChooser(
-			this.config,
-			'#mwe-upwiz-deeds',
-			this.deeds,
-			this.uploads
-		);
-
-		$( '<div>' )
-			.insertBefore( this.deedChooser.$selector.find( '.mwe-upwiz-deed-ownwork' ) )
-			.msg( 'mwe-upwiz-deeds-macro-prompt', this.uploads.length, mw.user );
-
-		uploads.forEach( function ( upload ) {
-			// Add previews and details to the DOM
-			if ( !upload.file.fromURL ) {
-				upload.deedPreview = new uw.ui.DeedPreview( upload );
+		// wire up handler to toggle common/individual deed selection forms
+		multiDeedRadio.on( 'select', ( selectedOption ) => {
+			if ( selectedOption.getData() === 'common' ) {
+				self.loadCommon( localUploads );
+			} else if ( selectedOption.getData() === 'individual' ) {
+				self.loadIndividual( localUploads );
 			}
 		} );
 
-		this.deedChooser.onLayoutReady();
+		multiDeedRadio.selectItemByData( defaultDeedInterface );
 
-		// restore the previous input (if any) for all deeds
-		if ( previousDeed ) {
-			this.deedChooser.setSerialized( previousDeed );
-		}
+		// restore serialized data (if any)
+		uploads.forEach( ( upload ) => {
+			if ( serializedDeeds[ upload.getFilename() ] ) {
+				upload.deedChooser.setSerialized( serializedDeeds[ upload.getFilename() ] );
+			} else if ( self.uploadedDeedSerialization ) {
+				upload.deedChooser.setSerialized( self.uploadedDeedSerialization );
+			}
+		} );
+	};
+
+	/**
+	 * Loads the deed form for providing information for a single file, or multiple
+	 * files all at once.
+	 *
+	 * @param {mw.UploadWizardUpload[]} uploads
+	 */
+	uw.controller.Deed.prototype.loadCommon = function ( uploads ) {
+		var deeds = this.getLicensingDeeds( uploads ),
+			deedChooser = new mw.UploadWizardDeedChooser(
+				this.config,
+				deeds,
+				uploads
+			);
+
+		uploads.forEach( ( upload ) => {
+			upload.deedChooser = deedChooser;
+		} );
+
+		this.ui.showCommonForm( deedChooser );
+
+		// reveal next button when deed has been chosen
+		deedChooser.on( 'choose', this.enableNextIfAllDeedsChosen.bind( this ) );
+		this.enableNextIfAllDeedsChosen();
+	};
+
+	/**
+	 * Loads the deed form for providing individual license information per file.
+	 *
+	 * @param {mw.UploadWizardUpload[]} uploads
+	 */
+	uw.controller.Deed.prototype.loadIndividual = function ( uploads ) {
+		var self = this;
+
+		uploads.forEach( ( upload ) => {
+			var deeds = self.getLicensingDeeds( uploads ),
+				deedChooser = new mw.UploadWizardDeedChooser(
+					self.config,
+					deeds,
+					[ upload ]
+				);
+
+			upload.deedChooser = deedChooser;
+
+			// reveal next button when deeds for all files have been chosen
+			deedChooser.on( 'choose', self.enableNextIfAllDeedsChosen.bind( self ) );
+		} );
+
+		this.ui.showIndividualForm( this.getUniqueDeedChoosers( uploads ) );
+
+		this.enableNextIfAllDeedsChosen();
 	};
 
 	/**
@@ -174,7 +240,6 @@
 	 */
 	uw.controller.Deed.prototype.shouldShowIndividualDeed = function ( config ) {
 		var ownWork;
-
 		if ( config.licensing.ownWorkDefault === 'choice' ) {
 			return true;
 		} else if ( config.licensing.ownWorkDefault === 'own' ) {
@@ -186,14 +251,95 @@
 	};
 
 	/**
-	 * @param {mw.UploadWizardUpload} upload
+	 * Get the own work and third party licensing deeds if they are needed.
+	 *
+	 * @param {mw.UploadWizardUpload[]} uploads
+	 * @return {mw.deed.Abstract[]}
 	 */
-	uw.controller.Deed.prototype.removeUpload = function ( upload ) {
-		uw.controller.Step.prototype.removeUpload.call( this, upload );
+	uw.controller.Deed.prototype.getLicensingDeeds = function ( uploads ) {
+		var deed,
+			deeds = {},
+			doOwnWork = false,
+			doThirdParty = false;
 
-		if ( upload.deedPreview ) {
-			upload.deedPreview.remove();
+		if ( this.config.licensing.ownWorkDefault === 'choice' ) {
+			doOwnWork = doThirdParty = true;
+		} else if ( this.config.licensing.ownWorkDefault === 'own' ) {
+			doOwnWork = true;
+		} else {
+			doThirdParty = true;
 		}
+
+		if ( doOwnWork ) {
+			deed = new uw.deed.OwnWork( this.config, uploads, this.api );
+			deeds[ deed.name ] = deed;
+		}
+		if ( doThirdParty ) {
+			deed = new uw.deed.ThirdParty( this.config, uploads, this.api );
+			deeds[ deed.name ] = deed;
+		}
+
+		return deeds;
+	};
+
+	/**
+	 * @param {mw.UploadWizardUpload[]} uploads
+	 * @return {mw.UploadWizardDeedChooser[]}
+	 */
+	uw.controller.Deed.prototype.getUniqueDeedChoosers = function ( uploads ) {
+		return uploads.reduce( ( uniques, upload ) => {
+			if ( upload.deedChooser && uniques.indexOf( upload.deedChooser ) < 0 ) {
+				uniques.push( upload.deedChooser );
+			}
+			return uniques;
+		}, [] );
+	};
+
+	/**
+	 * Checks deeds for validity.
+	 *
+	 * @param {boolean} thorough
+	 * @return {jQuery.Promise}
+	 */
+	uw.controller.Deed.prototype.valid = function ( thorough ) {
+		var deedChoosers = this.getUniqueDeedChoosers( this.uploads ),
+			deedsChosen = this.getUniqueDeedChoosers( this.uploads ).every( ( deedChooser ) => deedChooser.valid() ),
+			validityPromises = [
+				deedsChosen ?
+					$.Deferred().resolve( [], [], [] ).promise() :
+					$.Deferred().reject( [ mw.message( 'mwe-upwiz-deeds-require-selection' ) ], [], [] ).promise()
+			];
+
+		thorough = thorough || false;
+
+		if ( deedsChosen && thorough ) {
+			deedChoosers.forEach( ( deedChooser ) => {
+				deedChooser.deed.getFields().forEach( ( fieldLayout ) => {
+					validityPromises.push( fieldLayout.checkValidity( true ) );
+				} );
+			} );
+		}
+
+		return this.combineValidityPromises( validityPromises );
+	};
+
+	/**
+	 * Enable/disable the next button based on whether all deeds have been chosen.
+	 */
+	uw.controller.Deed.prototype.enableNextIfAllDeedsChosen = function () {
+		// Note: wrapping this inside setTimeout to ensure this is added
+		// at the end of the call stack; otherwise, due to how this is all
+		// set up, timing can be unpredictable: when re-loading the form
+		// after coming back from a later step, this ends being called more
+		// than once - both uninitialized (where it should not be visible),
+		// and initialized (after resetting the serialized state), where
+		// the event handlers end up invoking this.
+		// Stuffing this inside a setTimeout helps ensure that things
+		// actually execute in the order they're supposed to; i.e. the order
+		// they've been called in.
+		setTimeout( () => {
+			this.valid( false ).always( ( errors ) => this.ui.toggleNext( errors.length === 0 ) );
+		} );
 	};
 
 }( mw.uploadWizard ) );

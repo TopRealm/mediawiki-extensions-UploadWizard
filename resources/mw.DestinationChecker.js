@@ -1,5 +1,8 @@
 ( function () {
 
+	/**
+	 * @class
+	 */
 	mw.DestinationChecker = {
 
 		api: new mw.Api(),
@@ -22,13 +25,11 @@
 			return $.when(
 				this.checkUnique( title ),
 				this.checkBlacklist( title )
-			).then( function ( unique, blacklist ) {
-				return {
-					unique: unique,
-					blacklist: blacklist,
-					title: title
-				};
-			} );
+			).then( ( unique, blacklist ) => ( {
+				unique: unique,
+				blacklist: blacklist,
+				title: title
+			} ) );
 		},
 
 		/**
@@ -74,12 +75,8 @@
 				return $.Deferred().resolve( this.cachedBlacklist[ title ] );
 			}
 
-			return mw.loader.using( 'mediawiki.api.titleblacklist' ).then( function () {
-				return checker.api.isBlacklisted( title ).then( blacklistResultProcessor );
-			}, function () {
-				// it's not blacklisted, because the API isn't even available
-				return $.Deferred().resolve( { notBlacklisted: true, unavailable: true } );
-			} );
+			// it's not blacklisted, because the API isn't even available
+			return mw.loader.using( 'mediawiki.api.titleblacklist' ).then( () => checker.api.isBlacklisted( title ).then( blacklistResultProcessor ), () => $.Deferred().resolve( { notBlacklisted: true, unavailable: true } ) );
 		},
 
 		/**
@@ -124,7 +121,7 @@
 					if ( data.query.pages[ -1 ] && !data.query.pages[ -1 ].imageinfo ) {
 						protection = data.query.pages[ -1 ].protection;
 						if ( protection && protection.length > 0 ) {
-							protection.forEach( function ( val ) {
+							protection.forEach( ( val ) => {
 								if ( mw.config.get( 'wgUserGroups' ).indexOf( val.level ) === -1 ) {
 									result = {
 										isUnique: true,
@@ -211,7 +208,7 @@
 					iiprop: 'url|mime|size',
 					iiurlwidth: 150
 				} ).then( checkUniqueProcessor )
-			).then( function ( exact, fuzzy ) {
+			).then( ( exact, fuzzy ) => {
 				var result;
 				if ( !exact.isUnique || exact.isProtected ) {
 					result = exact;
