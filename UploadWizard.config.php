@@ -266,6 +266,86 @@ return [
 			'languageCodePrefix' => 'deed.',
 			'availableLanguages' => $uwCcAvailableLanguages
 		],
+        // 添加CC-BY-NC-SA-4.0许可证
+        'cc-by-nc-sa-4.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-sa-4.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-sa-4.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc', 'cc-sa' ],
+            'url' => '//creativecommons.org/licenses/by-nc-sa/4.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-4.0许可证
+        'cc-by-nc-4.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-4.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-4.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc' ],
+            'url' => '//creativecommons.org/licenses/by-nc/4.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-ND-4.0许可证
+        'cc-by-nd-4.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nd-4.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nd-4.0-explain',
+            'icons' => [ 'cc-by', 'cc-nd' ],
+            'url' => '//creativecommons.org/licenses/by-nd/4.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-ND-4.0许可证
+        'cc-by-nc-nd-4.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-nd-4.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-nd-4.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc', 'cc-nd' ],
+            'url' => '//creativecommons.org/licenses/by-nc-nd/4.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        'cc-by-sa-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-sa' ],
+            'url' => '//creativecommons.org/licenses/by-sa/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-SA-3.0许可证
+        'cc-by-nc-sa-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-sa-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-sa-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc', 'cc-sa' ],
+            'url' => '//creativecommons.org/licenses/by-nc-sa/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-3.0许可证
+        'cc-by-nc-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc' ],
+            'url' => '//creativecommons.org/licenses/by-nc/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-ND-3.0许可证
+        'cc-by-nd-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nd-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nd-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-nd' ],
+            'url' => '//creativecommons.org/licenses/by-nd/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-ND-3.0许可证
+        'cc-by-nc-nd-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-nd-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-nd-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc', 'cc-nd' ],
+            'url' => '//creativecommons.org/licenses/by-nc-nd/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
 		'cc-by-sa-3.0' => [
 			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-text',
 			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-explain',
@@ -654,15 +734,27 @@ return [
 			'template' => 'self',
 			'defaults' => 'cc-by-sa-3.0-cn',
 			'licenses' => [
-				'cc-by-sa-3.0-cn',
-				'cc-by-3.0-cn',
 				'cc-by-sa-4.0',
+				'cc-by-nc-sa-4.0',
 				'cc-by-4.0',
-				'cc-zero',
-				'fal',
-				'gfdl+cc-by-sa-3.0',
-				'gplv3',
-				'gplv2-or-later-version',
+				'cc-by-nc-4.0',
+				'cc-by-nd-4.0',
+				'cc-by-nc-nd-4.0',
+				'cc-by-sa-3.0',
+				'cc-by-sa-3.0-cn',
+				'cc-by-nc-sa-3.0',
+				'cc-by-3.0',
+				'cc-by-3.0-cn',
+				'cc-by-nc-3.0',
+				'cc-by-nd-3.0',
+				'cc-by-nc-nd-3.0',
+				'cc-by-sa-2.5',
+				'cc-by-sa-2.5-cn',
+				'cc-by-2.5',
+				'cc-by-2.5-cn',
+				'cc-by-sa-2.0',
+				'cc-by-2.0',
+				'cc-zero'
 			]
 		],
 
@@ -675,19 +767,27 @@ return [
 					'head' => 'mwe-upwiz-license-cc-head',
 					'subhead' => 'mwe-upwiz-license-cc-subhead',
 					'licenses' => [
-						'cc-by-sa-3.0-cn',
-						'cc-by-sa-3.0',
 						'cc-by-sa-4.0',
-						'cc-by-sa-2.5',
-						'cc-by-sa-2.5-cn',
-						'cc-by-sa-2.0',
-						'cc-by-4.0',
-						'cc-by-3.0',
-						'cc-by-3.0-cn',
-						'cc-by-2.5',
-						'cc-by-2.5-cn',
-						'cc-by-2.0',
-						'cc-zero'
+                        'cc-by-nc-sa-4.0',
+                        'cc-by-4.0',
+                        'cc-by-nc-4.0',
+                        'cc-by-nd-4.0',
+                        'cc-by-nc-nd-4.0',
+                        'cc-by-sa-3.0',
+                        'cc-by-sa-3.0-cn',
+                        'cc-by-nc-sa-3.0',
+                        'cc-by-3.0',
+                        'cc-by-3.0-cn',
+                        'cc-by-nc-3.0',
+                        'cc-by-nd-3.0',
+                        'cc-by-nc-nd-3.0',
+                        'cc-by-sa-2.5',
+                        'cc-by-sa-2.5-cn',
+                        'cc-by-2.5',
+                        'cc-by-2.5-cn',
+                        'cc-by-sa-2.0',
+                        'cc-by-2.0',
+                        'cc-zero'
 					]
 				],
 				[
