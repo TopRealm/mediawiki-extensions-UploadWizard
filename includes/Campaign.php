@@ -309,7 +309,7 @@ class Campaign {
 	 * @param Language|null $lang
 	 * @return array
 	 */
-	public function getParsedConfig( Language $lang = null ) {
+	public function getParsedConfig( ?Language $lang = null ) {
 		if ( $lang === null ) {
 			$lang = $this->context->getLanguage();
 		}
