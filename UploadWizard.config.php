@@ -346,14 +346,6 @@ return [
             'languageCodePrefix' => 'deed.',
             'availableLanguages' => $uwCcAvailableLanguages
         ],
-		'cc-by-sa-3.0' => [
-			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-text',
-			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-explain',
-			'icons' => [ 'cc-by', 'cc-sa' ],
-			'url' => '//creativecommons.org/licenses/by-sa/3.0/',
-			'languageCodePrefix' => 'deed.',
-			'availableLanguages' => $uwCcAvailableLanguages
-		],
 		'cc-by-sa-3.0-gfdl' => [
 			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-gfdl-text',
 			'templates' => [ 'GFDL', 'cc-by-sa-3.0' ],
@@ -732,7 +724,7 @@ return [
 		'ownWork' => [
 			'type' => 'or',
 			'template' => 'self',
-			'defaults' => 'cc-by-sa-3.0-cn',
+			'defaults' => 'cc-by-nc-sa-4.0',
 			'licenses' => [
 				'cc-by-sa-4.0',
 				'cc-by-nc-sa-4.0',
@@ -761,7 +753,7 @@ return [
 		// checkbox selection of all licenses
 		'thirdParty' => [
 			'type' => 'or',
-			'defaults' => 'cc-by-sa-3.0-cn',
+			'defaults' => 'cc-by-sa-4.0',
 			'licenseGroups' => [
 				[
 					'head' => 'mwe-upwiz-license-cc-head',
