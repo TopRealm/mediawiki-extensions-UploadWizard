@@ -1,9 +1,4 @@
 ( function ( uw ) {
-	/**
-	 * @class
-	 * @extends OO.ui.Dialog
-	 * @inheritdoc
-	 */
 	uw.LicensePreviewDialog = function UWLicensePreviewDialog( config ) {
 		uw.LicensePreviewDialog.super.call( this, config );
 	};
@@ -21,7 +16,7 @@
 		this.$spinner = $.createSpinner( { size: 'large', type: 'block' } )
 			.css( { width: 200, padding: 20, float: 'none', margin: '0 auto' } );
 
-		$( document.body ).on( 'click', ( e ) => {
+		$( document.body ).on( 'click', function ( e ) {
 			if ( !$.contains( dialog.$body.get( 0 ), e.target ) ) {
 				dialog.close();
 			}
@@ -34,7 +29,7 @@
 				label: OO.ui.msg( 'ooui-dialog-process-dismiss' )
 			} );
 
-		closeButton.on( 'click', () => {
+		closeButton.on( 'click', function () {
 			dialog.close();
 		} );
 

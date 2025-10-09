@@ -19,8 +19,9 @@
 	/**
 	 * Represents the UI for the wizard's Upload step.
 	 *
-	 * @class
+	 * @class uw.ui.Upload
 	 * @extends uw.ui.Step
+	 * @constructor
 	 * @param {Object} config UploadWizard config object.
 	 */
 	uw.ui.Upload = function UWUIUpload( config ) {
@@ -51,7 +52,7 @@
 				flags: [ 'progressive', 'primary' ]
 			}
 		} );
-		this.addFile.on( 'change', ( files ) => {
+		this.addFile.on( 'change', function ( files ) {
 			upload.emit( 'files-added', files );
 			upload.addFile.setValue( null );
 		} );
@@ -70,7 +71,7 @@
 				id: 'mwe-upwiz-add-flickr-file',
 				label: mw.message( 'mwe-upwiz-add-file-flickr' ).text(),
 				flags: 'progressive'
-			} ).on( 'click', () => {
+			} ).on( 'click', function () {
 				upload.flickrInterfaceInit();
 			} );
 
@@ -111,7 +112,7 @@
 			// Form whose submit event will be listened to and prevented
 			this.$flickrForm = $( '<form>' ).attr( 'id', 'mwe-upwiz-flickr-url-form' )
 				.appendTo( this.$flickrContainer )
-				.on( 'submit', () => {
+				.on( 'submit', function () {
 					var checker = new mw.FlickrChecker( upload, upload.flickrSelectButton );
 					upload.flickrButton.setDisabled( true );
 					upload.flickrChecker( checker );
@@ -151,14 +152,14 @@
 		this.nextStepButtonAllOk = new OO.ui.ButtonWidget( {
 			label: mw.message( 'mwe-upwiz-next-file' ).text(),
 			flags: [ 'progressive', 'primary' ]
-		} ).on( 'click', () => {
+		} ).on( 'click', function () {
 			upload.emit( 'next-step' );
 		} );
 
 		this.retryButtonSomeFailed = new OO.ui.ButtonWidget( {
 			label: mw.message( 'mwe-upwiz-file-retry' ).text(),
 			flags: [ 'progressive' ]
-		} ).on( 'click', () => {
+		} ).on( 'click', function () {
 			upload.hideEndButtons();
 			upload.emit( 'retry' );
 		} );
@@ -166,14 +167,14 @@
 		this.nextStepButtonSomeFailed = new OO.ui.ButtonWidget( {
 			label: mw.message( 'mwe-upwiz-next-file-despite-failures' ).text(),
 			flags: [ 'progressive', 'primary' ]
-		} ).on( 'click', () => {
+		} ).on( 'click', function () {
 			upload.emit( 'next-step' );
 		} );
 
 		this.retryButtonAllFailed = new OO.ui.ButtonWidget( {
 			label: mw.message( 'mwe-upwiz-file-retry' ).text(),
 			flags: [ 'progressive' ]
-		} ).on( 'click', () => {
+		} ).on( 'click', function () {
 			upload.hideEndButtons();
 			upload.emit( 'retry' );
 		} );
@@ -312,7 +313,7 @@
 		var thumbPromise,
 			$uploadInterfaceDivs = $( [] );
 
-		uploads.forEach( ( upload ) => {
+		uploads.forEach( function ( upload ) {
 			// We'll attach all interfaces to the DOM at once rather than one-by-one, for better
 			// performance
 			$uploadInterfaceDivs = $uploadInterfaceDivs.add( upload.ui.$div );
@@ -324,15 +325,15 @@
 		// Display thumbnails, but not all at once because they're somewhat expensive to generate.
 		// This will wait for each thumbnail to be complete before starting the next one.
 		thumbPromise = $.Deferred().resolve();
-		uploads.forEach( ( upload ) => {
-			thumbPromise = thumbPromise.then( () => {
+		uploads.forEach( function ( upload ) {
+			thumbPromise = thumbPromise.then( function () {
 				var deferred = $.Deferred();
 				setTimeout( function () {
 					if ( this.movedFrom ) {
 						// We're no longer displaying any of these thumbnails, stop
 						deferred.reject();
 					}
-					upload.ui.showThumbnail().done( () => {
+					upload.ui.showThumbnail().done( function () {
 						deferred.resolve();
 					} );
 				} );
@@ -344,7 +345,7 @@
 	uw.ui.Upload.prototype.addNextButton = function () {
 		var ui = this;
 
-		this.nextButtonPromise.done( () => {
+		this.nextButtonPromise.done( function () {
 			ui.$buttons.append(
 				$( '<div>' )
 					.addClass( 'mwe-upwiz-file-next-all-ok mwe-upwiz-file-endchoice' )
@@ -528,7 +529,7 @@
 	uw.ui.Upload.prototype.flickrChecker = function ( checker ) {
 		var flickrInputUrl = this.flickrInput.getValue();
 
-		checker.getLicenses().done( () => {
+		checker.getLicenses().done( function () {
 			checker.checkFlickr( flickrInputUrl );
 		} );
 	};

@@ -3,7 +3,7 @@
 	/**
 	 * @extends OO.ui.LicenseGroup
 	 *
-	 * @class
+	 * @constructor
 	 * @inheritdoc
 	 * @param {Object} config License configuration
 	 * @param {Array} config.licenses Array of license names
@@ -51,11 +51,11 @@
 		}
 
 		// when selecting an item that has a custom input, we'll immediately focus it
-		this.on( 'change', ( group, item ) => {
+		this.on( 'change', function ( group, item ) {
 			if ( item && item.isSelected && item.isSelected() ) {
 				// wrapped inside setTimeout to ensure it goes at the end of the call stack,
 				// just in case something steals focus in the meantime...
-				setTimeout( () => {
+				setTimeout( function () {
 					var name = item.getData();
 					if ( self.customInputs[ name ] ) {
 						self.customInputs[ name ].focus();
@@ -114,7 +114,7 @@
 		var self = this,
 			options = [];
 
-		this.config.licenses.forEach( ( licenseName ) => {
+		this.config.licenses.forEach( function ( licenseName ) {
 			var option;
 
 			if ( mw.UploadWizard.config.licenses[ licenseName ] === undefined ) {
@@ -129,7 +129,7 @@
 
 			// when custom text area receives focus, we should make sure this element is selected
 			if ( self.customInputs[ licenseName ] ) {
-				self.customInputs[ licenseName ].on( 'focus', () => {
+				self.customInputs[ licenseName ].on( 'focus', function () {
 					option.setSelected( true );
 				} );
 			}
@@ -137,7 +137,6 @@
 			options.push( option );
 		} );
 
-		// eslint-disable-next-line mediawiki/class-doc
 		return new OO.ui.RadioSelectWidget( { items: options, classes: classes } );
 	};
 
@@ -149,7 +148,7 @@
 		var self = this,
 			options = [];
 
-		this.config.licenses.forEach( ( licenseName ) => {
+		this.config.licenses.forEach( function ( licenseName ) {
 			var option;
 
 			if ( mw.UploadWizard.config.licenses[ licenseName ] === undefined ) {
@@ -165,7 +164,7 @@
 			// when custom input fields changes, we should make sure this element is selected when
 			// there is content, or deselected when empty
 			if ( self.customInputs[ licenseName ] ) {
-				self.customInputs[ licenseName ].on( 'focus', () => {
+				self.customInputs[ licenseName ].on( 'focus', function () {
 					option.setSelected( true );
 				} );
 			}
@@ -173,7 +172,6 @@
 			options.push( option );
 		} );
 
-		// eslint-disable-next-line mediawiki/class-doc
 		return new OO.ui.CheckboxMultiselectWidget( { items: options, classes: classes } );
 	};
 
@@ -185,7 +183,7 @@
 			self = this,
 			values = this.getValue();
 
-		wikiTexts = Object.keys( values ).map( ( name ) => {
+		wikiTexts = Object.keys( values ).map( function ( name ) {
 			var wikiText = self.getLicenceWikiText( name ),
 				value = values[ name ];
 			if ( typeof value === 'string' ) {
@@ -231,7 +229,7 @@
 			}
 		} else if ( this.type === 'checkbox' ) {
 			selected = this.group.findSelectedItems();
-			selected.forEach( ( item ) => {
+			selected.forEach( function ( item ) {
 				name = item.getData();
 				result[ name ] = !self.customInputs[ name ] || self.customInputs[ name ].getValue();
 			} );
@@ -247,7 +245,7 @@
 		var self = this,
 			selectArray = [];
 
-		Object.keys( values ).forEach( ( name ) => {
+		Object.keys( values ).forEach( function ( name ) {
 			var value = values[ name ];
 			if ( typeof value === 'string' && self.customInputs[ name ] ) {
 				self.customInputs[ name ].setValue( value );
@@ -308,7 +306,7 @@
 			wikiTexts;
 
 		if ( this.config.prependTemplates !== undefined ) {
-			this.config.prependTemplates.forEach( ( template ) => {
+			this.config.prependTemplates.forEach( function ( template ) {
 				templates.unshift( template );
 			} );
 		}
@@ -318,7 +316,9 @@
 			templates = [ templates.join( '|' ) ];
 		}
 
-		wikiTexts = templates.map( ( t ) => '{{' + t + '}}' );
+		wikiTexts = templates.map( function ( t ) {
+			return '{{' + t + '}}';
+		} );
 		return wikiTexts.join( '' );
 	};
 
@@ -358,13 +358,8 @@
 		}
 		$licenseLink = $( '<a>' ).attr( { target: '_blank', href: licenseURL } );
 		if ( licenseInfo.props.icons !== undefined ) {
-			licenseInfo.props.icons.forEach( ( icon ) => {
-				// The following classes are used here:
-				// * mwe-upwiz-cc-public-domain-icon
-				// * mwe-upwiz-cc-zero-icon
-				// * mwe-upwiz-cc-sa-icon
-				// * mwe-upwiz-cc-by-icon
-				$icons.append( $( '<span>' ).addClass( 'skin-invert mwe-upwiz-license-icon mwe-upwiz-' + icon + '-icon' ) );
+			licenseInfo.props.icons.forEach( function ( icon ) {
+				$icons.append( $( '<span>' ).addClass( 'mwe-upwiz-license-icon mwe-upwiz-' + icon + '-icon' ) );
 			} );
 		}
 
@@ -412,18 +407,14 @@
 		button = new OO.ui.ButtonWidget( {
 			label: mw.message( 'mwe-upwiz-license-custom-preview' ).text(),
 			flags: [ 'progressive' ]
-		} ).on( 'click', () => {
+		} ).on( 'click', function () {
 			self.showPreview( self.customInputs[ name ].getValue() );
 		} );
 
 		return $( '<div>' ).addClass( 'mwe-upwiz-license-custom' ).append(
 			this.customInputs[ name ].$element,
 			button.$element
-		).on( 'mousedown ', ( event ) => {
-			// T294389 "Another reason not mentioned above" license input textarea: Text is unclickable.
-			// No not propagate event to RadioSelectWidget.
-			event.stopPropagation();
-		} );
+		);
 	};
 
 	/**

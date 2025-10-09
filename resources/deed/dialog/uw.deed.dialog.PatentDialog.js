@@ -20,7 +20,7 @@
 	 * @param {Object} config Dialog config
 	 * @param {Object} uwConfig UploadWizard config
 	 * @param {mw.UploadWizardUpload[]} uploads
-	 * @class
+	 * @constructor
 	 */
 	uw.PatentDialog = function PatentDialog( config, uwConfig, uploads ) {
 		uw.PatentDialog.super.call( this, config );
@@ -57,7 +57,7 @@
 
 		uw.PatentDialog.super.prototype.initialize.apply( this, arguments );
 
-		this.uploads.forEach( ( upload ) => {
+		this.uploads.forEach( function ( upload ) {
 			filenames.push(
 				// use given title (if available already) or fall back to filename
 				upload.details ? upload.details.getTitle().getMainText() : upload.title.getMainText()
@@ -113,8 +113,6 @@
 	};
 
 	/**
-	 * @param {boolean} ownership
-	 * @param {boolean} grant
 	 * @return {OO.ui.PanelLayout}
 	 */
 	uw.PatentDialog.prototype.getLicenseLayout = function ( ownership, grant ) {
@@ -176,7 +174,7 @@
 		if ( action === '' ) {
 			this.emit( 'disagree' );
 		} else if ( action === 'confirm' ) {
-			return new OO.ui.Process( () => {
+			return new OO.ui.Process( function () {
 				dialog.emit( 'agree' );
 				dialog.close( { action: action } );
 			} );

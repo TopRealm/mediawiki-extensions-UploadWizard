@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use MediaWiki\Api\ApiBase;
+use ApiBase;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
