@@ -47,7 +47,7 @@
 		} );
 		this.queue.on( 'complete', this.showNext.bind( this ) );
 
-		this.ui.on( 'files-added', ( files ) => {
+		this.ui.on( 'files-added', function ( files ) {
 			var totalFiles = files.length + step.uploads.length,
 				tooManyFiles = totalFiles > step.config.maxUploads;
 
@@ -96,7 +96,7 @@
 			 * with new uploads, and still understand the existing files that
 			 * we've just reset the state for.
 			 */
-			uploads.forEach( ( upload ) => {
+			uploads.forEach( function ( upload ) {
 				upload.state = upload.fileKey === undefined ? 'error' : controller.finishState;
 			} );
 
@@ -193,7 +193,7 @@
 	uw.controller.Upload.prototype.retry = function () {
 		var controller = this;
 
-		this.uploads.forEach( ( upload ) => {
+		this.uploads.forEach( function ( upload ) {
 			if ( upload.state === 'error' ) {
 				// reset any uploads in error state back to be shiny & new
 				upload.state = 'new';

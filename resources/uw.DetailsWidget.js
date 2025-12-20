@@ -3,10 +3,8 @@
 	/**
 	 * A single logical field in UploadWizard's "Details" step form.
 	 *
-	 * This can be composed of multiple smaller widgets, but represents a single unit (e.g. a
-	 * "location" field could be composed of "latitude" and "longitude" inputs).
+	 * This can be composed of multiple smaller widgets, but represents a single unit.
 	 *
-	 * @class
 	 * @extends OO.ui.Widget
 	 * @abstract
 	 */
@@ -18,7 +16,7 @@
 	/**
 	 * A 'change' event is emitted when the state of this widget (and the serialized value) changes.
 	 *
-	 * @event uw.DetailsWidget.change
+	 * @event change
 	 */
 
 	/**

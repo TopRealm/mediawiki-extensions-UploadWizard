@@ -4,16 +4,16 @@
 	 * A custom campaign-defined field in UploadWizard's "Details" step form.
 	 *
 	 * @extends uw.DetailsWidget
-	 * @class
+	 * @constructor
 	 * @param {Object} [config] Configuration options
-	 * @param {string} config.wikitext Wikitext template to use for this field
-	 * @param {boolean} [config.required=false] Whether to mark this field as required
-	 * @param {string} [config.type='text'] Field type, 'text' or 'select'
-	 * @param {number} [config.maxLength] Maximum allowed length of input
-	 * @param {Object} [config.options] Map of select dropdown options to use when `type` is 'text'
+	 * @cfg {string} wikitext Wikitext template to use for this field
+	 * @cfg {boolean} [required=false] Whether to mark this field as required
+	 * @cfg {string} [type='text'] Field type, 'text' or 'select'
+	 * @cfg {number} [maxLength] Maximum allowed length of input
+	 * @cfg {Object} [options] Map of select dropdown options to use when `type` is 'text'
 	 */
 	uw.CampaignDetailsWidget = function UWCampaignDetailsWidget( config ) {
-		config = Object.assign( { type: 'text' }, config );
+		config = $.extend( { type: 'text' }, config );
 		uw.CampaignDetailsWidget.super.call( this );
 
 		this.required = !!config.required;
@@ -27,7 +27,9 @@
 		} else if ( config.type === 'select' ) {
 			this.input = new OO.ui.DropdownInputWidget( {
 				classes: [ 'mwe-idfield', 'mwe-upwiz-campaignDetailsWidget-input' ],
-				options: Object.keys( config.options ).map( ( key ) => ( { data: key, label: config.options[ key ] } ) )
+				options: Object.keys( config.options ).map( function ( key ) {
+					return { data: key, label: config.options[ key ] };
+				} )
 			} );
 		} else {
 			throw new Error( 'Unknown campaign field type: ' + config.type );

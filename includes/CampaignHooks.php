@@ -2,13 +2,13 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
+use Content;
+use IContextSource;
+use JsonSchemaException;
 use ManualLogEntry;
-use MediaWiki\Content\Content;
 use MediaWiki\Content\Hook\ContentModelCanBeUsedOnHook;
-use MediaWiki\Context\IContextSource;
 use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
 use MediaWiki\EditPage\EditPage;
-use MediaWiki\Extension\EventLogging\Libs\JsonSchemaValidation\JsonSchemaException;
 use MediaWiki\Hook\EditFilterMergedContentHook;
 use MediaWiki\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Hook\PageMoveCompleteHook;
