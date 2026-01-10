@@ -22,8 +22,8 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use MediaWiki\Api\ApiBase;
-use MediaWiki\Api\ApiQueryBase;
+use ApiBase;
+use ApiQueryBase;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
@@ -56,7 +56,8 @@ class ApiQueryAllCampaigns extends ApiQueryBase {
 
 		if ( $params['continue'] !== null ) {
 			$from_id = (int)$params['continue'];
-			$this->addWhere( $this->getDB()->expr( 'campaign_id', '>=', $from_id ) );
+			// Not SQL Injection, since we already force this to be an integer
+			$this->addWhere( "campaign_id >= $from_id" );
 		}
 
 		$res = $this->select( __METHOD__ );

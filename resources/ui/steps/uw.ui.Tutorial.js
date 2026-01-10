@@ -46,8 +46,9 @@
 	/**
 	 * Represents the UI for the wizard's Tutorial step.
 	 *
-	 * @class
+	 * @class uw.ui.Tutorial
 	 * @extends uw.ui.Step
+	 * @constructor
 	 */
 	uw.ui.Tutorial = function UWUITutorial() {
 		var ui = this;
@@ -77,7 +78,7 @@
 			label: mw.message( 'mwe-upwiz-skip-tutorial-future' ).text()
 		} );
 
-		this.skipCheckbox.on( 'change', () => {
+		this.skipCheckbox.on( 'change', function () {
 			ui.emit( 'skip-tutorial-click', ui.skipCheckbox.isSelected() );
 		} );
 
@@ -87,7 +88,7 @@
 
 		// Helpdesk link click
 		// eslint-disable-next-line no-jquery/no-global-selector
-		$( '#mwe-upwiz-tutorial-helpdesk' ).on( 'click', () => {
+		$( '#mwe-upwiz-tutorial-helpdesk' ).on( 'click', function () {
 			ui.emit( 'helpdesk-click' );
 		} );
 
@@ -123,11 +124,11 @@
 			classes: [ 'mwe-upwiz-button-next' ],
 			label: mw.message( 'mwe-upwiz-next' ).text(),
 			flags: [ 'progressive', 'primary' ]
-		} ).on( 'click', () => {
+		} ).on( 'click', function () {
 			ui.emit( 'next-step' );
 		} );
 
-		this.nextButtonPromise.done( () => {
+		this.nextButtonPromise.done( function () {
 			ui.$buttons.append(
 				new OO.ui.HorizontalLayout( {
 					items: [ ui.skipCheckbox, ui.skipCheckboxLabel, ui.nextButton ]

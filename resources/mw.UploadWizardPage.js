@@ -18,9 +18,6 @@
 		);
 	}
 
-	/**
-	 * @class
-	 */
 	mw.UploadWizardPage = function () {
 
 		var uploadWizard,
@@ -50,7 +47,7 @@
 		uploadWizard.createInterface( '#upload-wizard' );
 	};
 
-	$( () => {
+	$( function () {
 		// show page.
 		mw.UploadWizardPage();
 	} );

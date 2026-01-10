@@ -6,8 +6,9 @@
 	/**
 	 * A title field in UploadWizard's "Details" step form.
 	 *
-	 * @class
+	 * @class uw.TitleDetailsWidget
 	 * @extends uw.DetailsWidget
+	 * @constructor
 	 * @param {Object} [config]
 	 */
 	uw.TitleDetailsWidget = function UWTitleDetailsWidget( config ) {
@@ -72,23 +73,13 @@
 	};
 
 	/**
-	 * Get a mw.Title object for current input.
+	 * Get a mw.Title object for current value.
 	 *
 	 * @return {mw.Title|null}
 	 */
 	uw.TitleDetailsWidget.prototype.getTitle = function () {
-		return this.buildTitleFromInput( this.titleInput.getValue() );
-	};
-
-	/**
-	 * Get a mw.Title object for a given value.
-	 *
-	 * @param {string} value
-	 * @return {mw.Title}
-	 */
-	uw.TitleDetailsWidget.prototype.buildTitleFromInput = function ( value ) {
-		var extRegex, cleaned, title;
-		value = value.trim();
+		var value, extRegex, cleaned, title;
+		value = this.titleInput.getValue().trim();
 		if ( !value ) {
 			return null;
 		}
@@ -99,27 +90,24 @@
 	};
 
 	/**
-	 * @param {string} value
 	 * @return {jQuery.Promise}
 	 */
-	uw.TitleDetailsWidget.prototype.validateTitleInput = function ( value ) {
+	uw.TitleDetailsWidget.prototype.getErrors = function () {
 		var
 			errors = [],
+			value = this.titleInput.getValue().trim(),
 			processDestinationCheck = this.processDestinationCheck,
-			title = this.buildTitleFromInput( value ),
-			// max title length is dependent on DB column size and is bytes rather than characters
-			length = byteLength( value ),
-			// ... however MIN title length is easier for users to understand expressed in
-			// characters rather than bytes
-			charLength = value.length;
+			title = this.getTitle(),
+			// title length is dependent on DB column size and is bytes rather than characters
+			length = byteLength( value );
 
 		if ( value === '' ) {
-			errors.push( mw.message( 'mwe-upwiz-error-title-blank' ) );
+			errors.push( mw.message( 'mwe-upwiz-error-blank' ) );
 			return $.Deferred().resolve( errors ).promise();
 		}
 
-		if ( this.config.minLength && charLength < this.config.minLength ) {
-			errors.push( mw.message( 'mwe-upwiz-error-title-too-few-characters', this.config.minLength ) );
+		if ( this.config.minLength && length < this.config.minLength ) {
+			errors.push( mw.message( 'mwe-upwiz-error-title-too-short', this.config.minLength ) );
 			return $.Deferred().resolve( errors ).promise();
 		}
 
@@ -134,29 +122,26 @@
 		}
 
 		return mw.DestinationChecker.checkTitle( title.getPrefixedText() )
-			.then( ( result ) => {
+			.then( function ( result ) {
 				var moreErrors = processDestinationCheck( result );
 				if ( result.blacklist.unavailable ) {
 					// We don't have a title blacklist, so just check for some likely undesirable patterns.
 					moreErrors = moreErrors.concat(
-						// Messages:
-						// mwe-upwiz-error-title-invalid, mwe-upwiz-error-title-senselessimagename,
-						// mwe-upwiz-error-title-thumbnail, mwe-upwiz-error-title-extension,
-						mw.QuickTitleChecker.checkTitle( title.getNameText() ).map( ( errorCode ) => mw.message( 'mwe-upwiz-error-title-' + errorCode ) )
+						mw.QuickTitleChecker.checkTitle( title.getNameText() ).map( function ( errorCode ) {
+							// Messages:
+							// mwe-upwiz-error-title-invalid, mwe-upwiz-error-title-senselessimagename,
+							// mwe-upwiz-error-title-thumbnail, mwe-upwiz-error-title-extension,
+							return mw.message( 'mwe-upwiz-error-title-' + errorCode );
+						} )
 					);
 				}
 				return moreErrors;
 			} )
-			.then( ( moreErrors ) => [].concat( errors, moreErrors ), () => $.Deferred().resolve( errors ) );
-	};
-
-	/**
-	 * @return {jQuery.Promise}
-	 */
-	uw.TitleDetailsWidget.prototype.getErrors = function () {
-		var value = this.titleInput.getValue().trim();
-
-		return this.validateTitleInput( value );
+			.then( function ( moreErrors ) {
+				return [].concat( errors, moreErrors );
+			}, function () {
+				return $.Deferred().resolve( errors );
+			} );
 	};
 
 	/**
@@ -168,7 +153,7 @@
 	 * @return {mw.Message[]} Error messages
 	 */
 	uw.TitleDetailsWidget.prototype.processDestinationCheck = function ( result ) {
-		var messageKey, messageParams, errors, titleString;
+		var messageParams, errors, titleString;
 
 		if ( result.unique.isUnique && result.blacklist.notBlacklisted && !result.unique.isProtected ) {
 			return [];
@@ -189,21 +174,20 @@
 		if ( !result.unique.isUnique ) {
 			// result is NOT unique
 			if ( result.unique.href ) {
-				errors.push( mw.message( 'mwe-upwiz-fileexists-replace-on-page-v2' ) );
+				errors.push( mw.message(
+					'mwe-upwiz-fileexists-replace-on-page',
+					titleString,
+					$( '<a>' ).attr( { href: result.unique.href, target: '_blank' } )
+				) );
 			} else {
 				errors.push( mw.message( 'mwe-upwiz-fileexists-replace-no-link', titleString ) );
 			}
 		} else if ( result.unique.isProtected ) {
 			errors.push( mw.message( 'mwe-upwiz-error-title-protected' ) );
 		} else {
-			// check whether we have a custom error message for this blacklist reason
-			messageKey = 'mwe-upwiz-blacklisted-details-' + result.blacklist.blacklistMessage;
-			if ( !mw.message( messageKey ).exists() ) {
-				messageKey = 'mwe-upwiz-blacklisted-details';
-			}
-
+			mw.messages.set( result.blacklist.blacklistMessage, result.blacklist.blacklistReason );
 			messageParams = [
-				messageKey,
+				'mwe-upwiz-blacklisted-details',
 				titleString,
 				function () {
 					var titleMessage = mw.message( messageKey + '-title' ),
@@ -224,7 +208,7 @@
 			// feedback request for titleblacklist
 			if ( mw.UploadWizard.config.blacklistIssuesPage !== undefined && mw.UploadWizard.config.blacklistIssuesPage !== '' ) {
 				messageParams[ 0 ] = 'mwe-upwiz-blacklisted-details-feedback';
-				messageParams.push( () => {
+				messageParams.push( function () {
 					var feedback = new mw.Feedback( {
 						title: new mw.Title( mw.UploadWizard.config.blacklistIssuesPage ),
 						dialogTitleMessageKey: 'mwe-upwiz-feedback-title'
@@ -266,10 +250,7 @@
 	 * @param {string} serialized.title Title text
 	 */
 	uw.TitleDetailsWidget.prototype.setSerialized = function ( serialized ) {
-		var titleInput = this.titleInput,
-			title = serialized.title;
-
-		titleInput.setValue( title );
+		this.titleInput.setValue( serialized.title );
 	};
 
 }( mw.uploadWizard ) );

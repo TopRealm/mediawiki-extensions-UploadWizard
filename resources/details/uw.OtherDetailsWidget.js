@@ -3,7 +3,6 @@
 	/**
 	 * An other informations field in UploadWizard's "Details" step form.
 	 *
-	 * @class
 	 * @extends uw.DetailsWidget
 	 */
 	uw.OtherDetailsWidget = function UWOtherDetailsWidget() {
@@ -11,7 +10,8 @@
 
 		this.textInput = new OO.ui.MultilineTextInputWidget( {
 			classes: [ 'mwe-upwiz-other-textarea', 'mwe-upwiz-otherDetailsWidget-other' ],
-			autosize: true
+			autosize: true,
+			rows: 2
 		} );
 
 		// Aggregate 'change' event
