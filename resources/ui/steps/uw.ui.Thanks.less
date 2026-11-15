@@ -4,28 +4,32 @@
 @base-unit: 16px;
 
 #mwe-upwiz-stepdiv-thanks {
+	.mwe-upwiz-thanks-explain,
+	.mwe-upwiz-thanks-header,
 	.mwe-upwiz-thanks-update-delay {
 		width: 100%;
 		text-align: center;
-		font-weight: @font-weight-bold;
 	}
 
-	.mwe-upwiz-thanks-message {
-		margin-bottom: 3em;
-		font-weight: @font-weight-bold;
+	.mwe-upwiz-thanks-explain {
+		margin-bottom: 2em;
+	}
+
+	.mwe-upwiz-thanks-update-delay {
+		font-weight: bold;
 	}
 
 	.mwe-upwiz-thanks {
 		display: flex;
 		flex-wrap: wrap;
-		margin-bottom: 4em;
+		gap: 2.5em;
+		margin-bottom: 1em;
 
 		.mwe-upwiz-thumbnail-side {
-			width: 200px;
-			margin-right: 35px;
+			width: 120px;
 
 			.mwe-upwiz-thumbnail {
-				max-height: 200px;
+				max-height: 120px;
 				margin-bottom: 0.5em;
 			}
 		}
@@ -36,24 +40,15 @@
 		}
 	}
 
-	.mwe-upwiz-buttons {
-		padding-left: 235px;
-		text-align: start;
-
-		@media screen and ( max-width: @min-width-breakpoint-tablet ) {
-			padding-left: 0;
-		}
-	}
-
 	.mwe-upwiz-thanks + .mwe-upwiz-thanks {
 		margin-top: 2em;
 	}
 
 	.mwe-upwiz-mv-cta {
-		box-shadow: @box-shadow-drop-medium;
+		box-shadow: 0 1px 4px rgba( 0, 0, 0, 0.25 );
 		.flex-display();
 		align-items: center;
-		border-radius: (@base-unit / 2);
+		border-radius: @base-unit / 2;
 		flex-direction: column;
 		justify-content: center;
 		margin-bottom: @base-unit;
@@ -69,7 +64,7 @@
 		margin: 0;
 		position: absolute;
 		right: 0;
-		top: (@base-unit / 2);
+		top: @base-unit / 2;
 
 		a {
 			background: transparent;
@@ -131,9 +126,5 @@
 		@media screen and ( min-width: @min-width-breakpoint-desktop-wide ) {
 			position: absolute;
 		}
-	}
-
-	.oo-ui-actionFieldLayout.oo-ui-fieldLayout-align-top {
-		max-width: 40em;
 	}
 }

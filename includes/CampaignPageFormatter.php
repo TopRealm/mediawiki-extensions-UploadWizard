@@ -11,13 +11,13 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
+use IContextSource;
 use ImageGalleryBase;
-use MediaWiki\Context\IContextSource;
-use MediaWiki\Context\RequestContext;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Skin\SkinComponentUtils;
 use OOUI\ButtonWidget;
+use RequestContext;
+use Skin;
 
 /**
  * Helper class to produce formatted HTML output for Campaigns
@@ -53,6 +53,12 @@ class CampaignPageFormatter {
 		$campaignDescription = $config['description'] ?? '';
 		$campaignViewMoreLink = $this->campaign->getTrackingCategory()->getFullURL();
 
+		$gallery = ImageGalleryBase::factory( 'packed-hover' );
+		$gallery->setContext( $this->context );
+		$gallery->setWidths( '180' );
+		$gallery->setHeights( '180' );
+		$gallery->setShowBytes( false );
+
 		$this->context->getOutput()->setCdnMaxage(
 			Config::getSetting( 'campaignSquidMaxAge' )
 		);
@@ -69,14 +75,14 @@ class CampaignPageFormatter {
 				$campaignTemplate = Config::getSetting( 'campaignCTACampaignTemplate' );
 				$urlParams['campaign'] = str_replace( '$1', $this->campaign->getName(), $campaignTemplate );
 			}
-			$createAccountUrl = SkinComponentUtils::makeSpecialUrlSubpage( 'Userlogin', 'signup', $urlParams );
+			$createAccountUrl = Skin::makeSpecialUrlSubpage( 'Userlogin', 'signup', $urlParams );
 			$uploadLink = new ButtonWidget( [
 				'label' => wfMessage( 'mwe-upwiz-campaign-create-account-button' )->text(),
 				'flags' => [ 'progressive', 'primary' ],
 				'href' => $createAccountUrl
 			] );
 		} else {
-			$uploadUrl = SkinComponentUtils::makeSpecialUrl(
+			$uploadUrl = Skin::makeSpecialUrl(
 				'UploadWizard', [ 'campaign' => $this->campaign->getName() ]
 			);
 			$uploadLink = new ButtonWidget( [
@@ -93,9 +99,6 @@ class CampaignPageFormatter {
 				wfMessage( 'mwe-upwiz-campaign-no-uploads-yet' )->plain()
 			);
 		} else {
-			$gallery = ImageGalleryBase::factory( 'packed-hover', $this->context );
-			$gallery->setShowBytes( false );
-
 			foreach ( $images as $image ) {
 				$gallery->add( $image );
 			}

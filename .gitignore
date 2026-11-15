@@ -2,7 +2,7 @@
 *~
 *.kate-swp
 .*.swp
-docs/
+docs/js
 *.pyc
 node_modules
 .tox

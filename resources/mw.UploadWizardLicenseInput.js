@@ -2,7 +2,6 @@
  * Create a group of radio buttons for licenses. N.B. the licenses are named after the templates they invoke.
  * Note that this is very anti-MVC. The values are held only in the actual form elements themselves.
  *
- * @class
  * @extends OO.ui.Widget
  * @param {Object} config Configuration. Must have following properties:
  * @param {string} config.type Whether inclusive or exclusive license allowed ("and"|"or")
@@ -47,12 +46,12 @@ mw.UploadWizardLicenseInput = function ( config, count, api ) {
 
 		this.$element.append( $container );
 
-		config.licenseGroups.forEach( ( groupConfig ) => {
+		config.licenseGroups.forEach( function ( groupConfig ) {
 			var classes = [ 'mwe-upwiz-deed-license-group-head', 'mwe-upwiz-deed-license-group-' + groupConfig.head ],
 				$icons, label, labelParams, option, group;
 
 			$icons = $( '<span>' );
-			( groupConfig.icons || [] ).forEach( ( icon ) => {
+			( groupConfig.icons || [] ).forEach( function ( icon ) {
 				$icons.append( $( '<span>' ).addClass( 'mwe-upwiz-license-icon mwe-upwiz-' + icon + '-icon' ) );
 			} );
 
@@ -75,7 +74,7 @@ mw.UploadWizardLicenseInput = function ( config, count, api ) {
 			input.widget.addItems( [ option ] );
 
 			group = new mw.uploadWizard.LicenseGroup(
-				Object.assign( {}, groupConfig, { option: option } ),
+				$.extend( {}, groupConfig, { option: option } ),
 				// group config can override overall type; e.g. a single group can be "and", while
 				// the rest of the config can be "or"
 				( groupConfig.type || config.type ) === 'or' ? 'radio' : 'checkbox',
@@ -87,16 +86,16 @@ mw.UploadWizardLicenseInput = function ( config, count, api ) {
 		} );
 		$container.append( input.widget.$element );
 
-		this.widget.on( 'select', ( selectedOption, isSelected ) => {
+		this.widget.on( 'select', function ( selectedOption, isSelected ) {
 			// radios don't have a second 'selected' arg; they're always true
 			isSelected = isSelected || true;
 
 			// radio groups won't fire events for group that got deselected
 			// (as a results of a new one being selected), so we'll iterate
 			// all groups to remove no-longer-active ones
-			groups.forEach( ( group ) => {
+			groups.forEach( function ( group ) {
 				var option = group.config.option,
-					defaultLicenses = ( group.config.defaults || [] ).reduce( ( defaults, license ) => {
+					defaultLicenses = ( group.config.defaults || [] ).reduce( function ( defaults, license ) {
 						defaults[ license ] = true;
 						return defaults;
 					}, {} );
@@ -135,9 +134,9 @@ mw.UploadWizardLicenseInput = function ( config, count, api ) {
 OO.inheritClass( mw.UploadWizardLicenseInput, OO.ui.Widget );
 OO.mixinClass( mw.UploadWizardLicenseInput, OO.ui.mixin.GroupElement );
 
-Object.assign( mw.UploadWizardLicenseInput.prototype, {
+$.extend( mw.UploadWizardLicenseInput.prototype, {
 	unload: function () {
-		this.getItems().forEach( ( group ) => {
+		this.getItems().forEach( function ( group ) {
 			group.unload();
 		} );
 	},
@@ -146,7 +145,6 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 	 * Sets the value(s) of a license input. This is a little bit klugey because it relies on an inverted dict, and in some
 	 * cases we are now letting license inputs create multiple templates.
 	 *
-	 * @memberof mw.UploadWizardLicenseInput
 	 * @param {Object} values License-key to boolean values, e.g. { 'cc_by_sa_30': true, gfdl: true, 'flickrreview|cc_by_sa_30': false }
 	 * @param {string} [groupName] Name of group, when values are only relevant to this group
 	 */
@@ -154,7 +152,7 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 		var selectedGroups = [];
 
 		var input = this;
-		this.getItems().forEach( ( group ) => {
+		this.getItems().forEach( function ( group ) {
 			if ( groupName === undefined || group.getGroup() === groupName ) {
 				group.setValue( values );
 				if ( Object.keys( group.getValue() ).length > 0 ) {
@@ -177,7 +175,7 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 			// 1 group
 			// in that case, we're only going to select the *last* occurrence, which is what
 			// a browser would do when trying to find/select a radio that occurs twice
-			selectedGroups.forEach( ( group ) => {
+			selectedGroups.forEach( function ( group ) {
 				group.setValue( {} );
 			} );
 		}
@@ -185,7 +183,7 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 		// in the case of multiple option groups (with a parent radio/check to expand/collapse),
 		// we need to make sure the parent option and expanded state match the state of the
 		// group - when the group has things that are selected, it must be active
-		this.getItems().forEach( ( group ) => {
+		this.getItems().forEach( function ( group ) {
 			var option = group.config.option,
 				selected = Object.keys( group.getValue() ).length > 0;
 
@@ -209,12 +207,10 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 
 	/**
 	 * Set the default configured licenses
-	 *
-	 * @memberof mw.UploadWizardLicenseInput
 	 */
 	setDefaultValues: function () {
 		var values = {};
-		this.defaults.forEach( ( license ) => {
+		this.defaults.forEach( function ( license ) {
 			values[ license ] = true;
 		} );
 		this.setValues( values );
@@ -224,15 +220,14 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 	 * Gets the selected license(s). The returned value will be a license
 	 * key => license props map, as defined in UploadWizard.config.php.
 	 *
-	 * @memberof mw.UploadWizardLicenseInput
 	 * @return {Object}
 	 */
 	getLicenses: function () {
 		var licenses = {};
 
-		this.getItems().forEach( ( group ) => {
+		this.getItems().forEach( function ( group ) {
 			var licenseNames = Object.keys( group.getValue() );
-			licenseNames.forEach( ( name ) => {
+			licenseNames.forEach( function ( name ) {
 				licenses[ name ] = mw.UploadWizard.config.licenses[ name ] || {};
 			} );
 		} );
@@ -243,17 +238,17 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 	/**
 	 * Gets the wikitext associated with all selected inputs. Some inputs also have associated textareas so we append their contents too.
 	 *
-	 * @memberof mw.UploadWizardLicenseInput
 	 * @return {string} of wikitext (empty string if no inputs set)
 	 */
 	getWikiText: function () {
-		return this.getItems().map( ( group ) => group.getWikiText() ).join( '' ).trim();
+		return this.getItems().map( function ( group ) {
+			return group.getWikiText();
+		} ).join( '' ).trim();
 	},
 
 	/**
 	 * Returns a list of templates used & transcluded in given wikitext
 	 *
-	 * @memberof mw.UploadWizardLicenseInput
 	 * @param {string} wikitext
 	 * @return {jQuery.Promise} Promise that resolves with an array of template names
 	 */
@@ -269,7 +264,7 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 			prop: 'templates',
 			title: 'File:UploadWizard license verification.png',
 			text: wikitext
-		} ).then( ( result ) => {
+		} ).then( function ( result ) {
 			var templates = [];
 			for ( var i = 0; i < result.parse.templates.length; i++ ) {
 				var template = result.parse.templates[ i ];
@@ -290,13 +285,12 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 	/**
 	 * See mw.uploadWizard.DetailsWidget
 	 *
-	 * @memberof mw.UploadWizardLicenseInput
 	 * @return {jQuery.Promise}
 	 */
 	getErrors: function () {
 		var errors = $.Deferred().resolve( [] ).promise();
 		var addError = function ( message ) {
-			errors = errors.then( ( errors ) => {
+			errors = errors.then( function ( errors ) {
 				errors.push( mw.message( message ) );
 				return errors;
 			} );
@@ -310,10 +304,10 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 			// It's pretty hard to screw up a radio button, so if even one of them is selected it's okay.
 			// But also check that associated text inputs are filled for if the input is selected, and that
 			// they are the appropriate size.
-			Object.keys( selectedInputs ).forEach( ( name ) => {
+			Object.keys( selectedInputs ).forEach( function ( name ) {
 				var licenseMap = selectedInputs[ name ];
 
-				Object.keys( licenseMap ).forEach( ( license ) => {
+				Object.keys( licenseMap ).forEach( function ( license ) {
 					var licenseValue = licenseMap[ license ];
 					if ( typeof licenseValue !== 'string' ) {
 						return;
@@ -337,7 +331,7 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 						errors = $.when(
 							errors, // array of existing errors
 							input.getUsedTemplates( wikitext )
-						).then( ( errors, usedTemplates ) => {
+						).then( function ( errors, usedTemplates ) {
 							if ( usedTemplates.indexOf( mw.UploadWizard.config.customLicenseTemplate ) < 0 ) {
 								// no license template found, add another error
 								errors.push( mw.message( 'mwe-upwiz-error-license-wikitext-missing-template' ) );
@@ -356,7 +350,6 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 	/**
 	 * See mw.uploadWizard.DetailsWidget
 	 *
-	 * @memberof mw.UploadWizardLicenseInput
 	 * @return {jQuery.Promise}
 	 */
 	getWarnings: function () {
@@ -364,19 +357,18 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 	},
 
 	/**
-	 * @memberof mw.UploadWizardLicenseInput
 	 * @return {Object}
 	 */
 	getSerialized: function () {
 		var values = {};
 
-		this.getItems().forEach( ( group ) => {
+		this.getItems().forEach( function ( group ) {
 			var groupName = group.getGroup();
 			var value = group.getValue();
 
 			if ( Object.keys( value ).length > 0 ) {
 				// $.extend just in case there are multiple groups with the same name...
-				values[ groupName ] = Object.assign( {}, values[ groupName ] || {}, value );
+				values[ groupName ] = $.extend( {}, values[ groupName ] || {}, value );
 			}
 		} );
 
@@ -384,13 +376,12 @@ Object.assign( mw.UploadWizardLicenseInput.prototype, {
 	},
 
 	/**
-	 * @memberof mw.UploadWizardLicenseInput
 	 * @param {Object} serialized
 	 */
 	setSerialized: function ( serialized ) {
 		var input = this;
 
-		Object.keys( serialized ).forEach( ( groupName ) => {
+		Object.keys( serialized ).forEach( function ( groupName ) {
 			input.setValues( serialized[ groupName ], groupName );
 		} );
 	}

@@ -4,7 +4,7 @@
 	 * Interface widget to choose among various deeds -- for instance, if own work, or not own work, or other such cases.
 	 *
 	 * @class
-	 * @mixes OO.EventEmitter
+	 * @mixins OO.EventEmitter
 	 * @param {Object} config The UW config
 	 * @param {Object} deeds Keyed object of UploadWizardDeed items
 	 * @param {mw.UploadWizardUpload[]} uploads Uploads that this applies to (this is just to make deleting and plurals work)
@@ -31,7 +31,7 @@
 			$radioContainer, $formContainer
 		);
 
-		Object.keys( this.deeds ).forEach( ( name ) => {
+		Object.keys( this.deeds ).forEach( function ( name ) {
 			var deed = chooser.deeds[ name ],
 				radio = new OO.ui.RadioSelectWidget( { classes: [ 'mwe-upwiz-deed-radio-' + name ] } ),
 				option = new OO.ui.RadioOptionWidget(),
@@ -82,14 +82,14 @@
 				if ( config.licensing.defaultType === deed.name ) {
 					chooser.onLayoutReady = chooser.selectDeed.bind( chooser, deed );
 				}
-				radio.on( 'choose', () => {
+				radio.on( 'choose', function () {
 					chooser.selectDeed( deed );
 				} );
 			}
 		} );
 
 		// Deselect all deeds
-		Object.keys( this.deeds ).forEach( ( name ) => {
+		Object.keys( this.deeds ).forEach( function ( name ) {
 			chooser.deselectDeedInterface( name );
 		} );
 	};
@@ -139,6 +139,7 @@
 		// TODO: Use a tag selector
 		// eslint-disable-next-line no-jquery/no-sizzle
 		$deedForm.find( ':input' ).prop( 'disabled', true );
+		// eslint-disable-next-line no-jquery/no-sizzle
 		$deedForm.hide();
 	};
 
@@ -153,7 +154,7 @@
 			$deedForm = this.$element.find( '.mwe-upwiz-deed.mwe-upwiz-deed-' + deedName );
 
 		// deselect all other deeds
-		Object.keys( this.deeds ).forEach( ( name ) => {
+		Object.keys( this.deeds ).forEach( function ( name ) {
 			if ( name === deedName ) {
 				return;
 			}
@@ -166,13 +167,14 @@
 		// TODO: Use a tag selector
 		// eslint-disable-next-line no-jquery/no-sizzle
 		$deedForm.find( ':input' ).prop( 'disabled', false );
+		// eslint-disable-next-line no-jquery/no-sizzle
 		$deedForm.show();
 	};
 
 	mw.UploadWizardDeedChooser.prototype.remove = function () {
 		var self = this;
 
-		Object.keys( this.deeds ).forEach( ( name ) => {
+		Object.keys( this.deeds ).forEach( function ( name ) {
 			self.deeds[ name ].unload();
 		} );
 

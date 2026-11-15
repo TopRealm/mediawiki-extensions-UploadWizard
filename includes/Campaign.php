@@ -3,17 +3,16 @@
 namespace MediaWiki\Extension\UploadWizard;
 
 use InvalidArgumentException;
+use Language;
 use MediaWiki\Category\Category;
-use MediaWiki\Context\RequestContext;
-use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Parser\Parser;
-use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
-use Wikimedia\ObjectCache\WANObjectCache;
+use Parser;
+use ParserOptions;
+use RequestContext;
+use WANObjectCache;
 use Wikimedia\Rdbms\Database;
-use Wikimedia\Rdbms\SelectQueryBuilder;
 
 /**
  * Class that represents a single upload campaign.
@@ -169,15 +168,21 @@ class Campaign {
 			function ( $oldValue, &$ttl, array &$setOpts ) use ( $fname, $dbr ) {
 				$setOpts += Database::getCacheSetOptions( $dbr );
 
-				return $dbr->newSelectQueryBuilder()
-					->select( [ 'count' => 'COUNT(DISTINCT img_actor)' ] )
-					->from( 'categorylinks' )
-					->join( 'page', null, 'cl_from=page_id' )
-					->join( 'image', null, 'page_title=img_name' )
-					->where( [ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ] )
-					->caller( $fname )
-					->useIndex( [ 'categorylinks' => 'cl_timestamp' ] )
-					->fetchField();
+				$result = $dbr->select(
+					[ 'categorylinks', 'page', 'image' ],
+					[ 'count' => 'COUNT(DISTINCT img_actor)' ],
+					[ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ],
+					$fname,
+					[
+						'USE INDEX' => [ 'categorylinks' => 'cl_timestamp' ]
+					],
+					[
+						'page' => [ 'INNER JOIN', 'cl_from=page_id' ],
+						'image' => [ 'INNER JOIN', 'page_title=img_name' ]
+					]
+				);
+
+				return $result->current()->count;
 			}
 		);
 	}
@@ -188,16 +193,18 @@ class Campaign {
 	 * @return Title[]
 	 */
 	public function getUploadedMedia( $limit = 24 ) {
-		$result = $this->dbr->newSelectQueryBuilder()
-			->select( [ 'cl_from', 'page_namespace', 'page_title' ] )
-			->from( 'categorylinks' )
-			->join( 'page', null, 'cl_from=page_id' )
-			->where( [ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ] )
-			->orderBy( 'cl_timestamp', SelectQueryBuilder::SORT_DESC )
-			->limit( $limit )
-			->useIndex( [ 'categorylinks' => 'cl_timestamp' ] )
-			->caller( __METHOD__ )
-			->fetchResultSet();
+		$result = $this->dbr->select(
+			[ 'categorylinks', 'page' ],
+			[ 'cl_from', 'page_namespace', 'page_title' ],
+			[ 'cl_to' => $this->getTrackingCategory()->getDBkey(), 'cl_type' => 'file' ],
+			__METHOD__,
+			[
+				'ORDER BY' => 'cl_timestamp DESC',
+				'LIMIT' => $limit,
+				'USE INDEX' => [ 'categorylinks' => 'cl_timestamp' ]
+			],
+			[ 'page' => [ 'INNER JOIN', 'cl_from=page_id' ] ]
+		);
 
 		$images = [];
 		foreach ( $result as $row ) {
@@ -459,7 +466,7 @@ class Campaign {
 	 * @return bool
 	 */
 	private function isActive() {
-		$now = time();
+		$today = strtotime( date( "Y-m-d" ) );
 		$start = array_key_exists(
 			'start', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['start'] ) : null;
@@ -467,7 +474,7 @@ class Campaign {
 			'end', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['end'] ) : null;
 
-		return ( $start === null || $start <= $now ) && ( $end === null || $end > $now );
+		return ( $start === null || $start <= $today ) && ( $end === null || $end > $today );
 	}
 
 	/**
@@ -477,12 +484,12 @@ class Campaign {
 	 * @return bool
 	 */
 	private function wasActive() {
-		$now = time();
+		$today = strtotime( date( "Y-m-d" ) );
 		$start = array_key_exists(
 			'start', $this->parsedConfig
 		) ? strtotime( $this->parsedConfig['start'] ) : null;
 
-		return ( $start === null || $start <= $now ) && !$this->isActive();
+		return ( $start === null || $start <= $today ) && !$this->isActive();
 	}
 
 	/**

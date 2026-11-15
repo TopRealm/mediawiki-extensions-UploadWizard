@@ -18,10 +18,10 @@ QUnit.module( 'mw.uploadWizard.LocationDetailsWidget' );
 	[ '1 2 3 4', NaN ],
 	[ '3° 12\' 45" N 1° 00\' 00" E', NaN ],
 	[ '1.2.3', NaN ]
-].forEach( ( testCase ) => {
+].forEach( function ( testCase ) {
 	var input = testCase[ 0 ],
 		expected = testCase[ 1 ];
-	QUnit.test( 'normalizeCoordinate( \'' + input + '\' )', ( assert ) => {
+	QUnit.test( 'normalizeCoordinate( \'' + input + '\' )', function ( assert ) {
 		var result = mw.uploadWizard.LocationDetailsWidget.prototype.normalizeCoordinate( input );
 		assert.true( isFinite( result ) === isFinite( expected ) );
 		if ( isFinite( expected ) ) {

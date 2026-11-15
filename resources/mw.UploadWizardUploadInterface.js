@@ -2,8 +2,9 @@
 	/**
 	 * Create an interface fragment corresponding to a file input, suitable for Upload Wizard.
 	 *
-	 * @class
-	 * @mixes OO.EventEmitter
+	 * @class mw.UploadWizardUploadInterface
+	 * @mixins OO.EventEmitter
+	 * @constructor
 	 * @param {mw.UploadWizardUpload} upload
 	 */
 	mw.UploadWizardUploadInterface = function MWUploadWizardUploadInterface( upload ) {
@@ -48,7 +49,7 @@
 			flags: 'destructive',
 			icon: 'trash',
 			framed: false
-		} ).on( 'click', () => {
+		} ).on( 'click', function () {
 			ui.emit( 'upload-removed' );
 		} );
 
@@ -73,7 +74,7 @@
 		// this.progressBar = ( no progress bar for individual uploads yet )
 		// we bind to the ui div since .off() doesn't work for non-DOM objects
 		// TODO Convert this to an OO.EventEmitter, and use OOjs events
-		this.$div.on( 'transportProgressEvent', () => {
+		this.$div.on( 'transportProgressEvent', function () {
 			ui.showTransportProgress();
 		} );
 	};
@@ -214,7 +215,7 @@
 		var $preview = this.$div.find( '.mwe-upwiz-file-preview' ),
 			deferred = $.Deferred();
 		// This must match the CSS dimensions of .mwe-upwiz-file-preview
-		this.upload.getThumbnail( 120, 120 ).done( ( thumb ) => {
+		this.upload.getThumbnail( 120, 120 ).done( function ( thumb ) {
 			mw.UploadWizard.placeThumbnail( $preview, thumb );
 			deferred.resolve();
 		} );

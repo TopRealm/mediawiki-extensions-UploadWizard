@@ -9,7 +9,7 @@ form.mwe-upwiz-form {
 	padding: 0;
 	font-size: 1em;
 	line-height: 2.5;
-	background-color: @background-color-base;
+	background-color: #fff;
 	border: 0;
 
 	// shrink steps indicator down on mobile to try to fit all steps on one
@@ -25,7 +25,7 @@ form.mwe-upwiz-form {
 		}
 
 		li.head {
-			font-weight: @font-weight-normal;
+			font-weight: normal;
 		}
 
 		li.arrow::after {
@@ -80,7 +80,7 @@ form.mwe-upwiz-form {
 }
 
 .mwe-upwiz-thumbnail {
-	background-color: @background-color-base;
+	background-color: #fff;
 	text-align: center;
 }
 
@@ -90,7 +90,7 @@ form.mwe-upwiz-form {
 
 	canvas,
 	img {
-		box-shadow: @box-shadow-drop-medium;
+		box-shadow: 0 0 5px #999;
 	}
 }
 
@@ -129,7 +129,7 @@ a.mwe-upwiz-tooltip-link {
 }
 
 .mwe-readonly {
-	background-color: @color-disabled;
+	background-color: #fff;
 	padding: 0.25em;
 }
 
@@ -157,16 +157,16 @@ a.mwe-upwiz-tooltip-link {
 }
 
 .mwe-upwiz-objref-pick-image {
-	font-weight: @font-weight-bold;
+	font-weight: bold;
 }
 
 .mwe-upwiz-objref-pick-image input:disabled + label {
-	color: @color-disabled;
-	font-weight: @font-weight-normal;
+	color: #72777d;
+	font-weight: normal;
 }
 
 .mwe-upwiz-objref-notice-existing-image {
-	font-weight: @font-weight-bold;
+	font-weight: bold;
 }
 
 .mwe-upwiz-sign {
@@ -195,31 +195,18 @@ a.mwe-upwiz-tooltip-link {
 
 .mwe-upwiz-license-metadata {
 	margin-top: 3em;
-	padding: 1em 1em 1em ~'calc( 64px + 2.5em )';
-	border: @border-width-base @border-style-base @border-color-subtle;
+	padding: 0 1em 0 ~'calc( 64px + 2.5em )';
+	border: 1px solid #c8ccd1;
 	white-space: pre-wrap;
 	/* @embed */
 	background: url( images/cc.svg ) no-repeat 1em 1em, url( images/zero.svg ) no-repeat ~'calc( 1.5em + 32px )' 1em;
 	background-size: 32px 32px;
-	background-color: @background-color-neutral-subtle;
+	background-color: #f2f4f7;
 
 	@media screen and ( max-width: @min-width-breakpoint-tablet ) {
 		margin-top: 1em;
 		padding: 0.5em;
 		background: none;
-		background-color: @background-color-neutral-subtle;
+		background-color: #f2f4f7;
 	}
-}
-
-#mwe-upwiz-details-error-count {
-	text-align: initial;
-	display: flex;
-	justify-content: end;
-	padding: 1em 0;
-}
-
-// wrap buttons to prevent ones with really long text (as is often the
-// case in e.g. German) to run off-screen
-#mwe-upwiz-content .oo-ui-buttonElement-button {
-	white-space: normal;
 }

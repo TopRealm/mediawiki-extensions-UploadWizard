@@ -18,7 +18,7 @@
 ( function ( uw ) {
 	QUnit.module( 'mw.uploadWizard.controller.Upload', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'Constructor sanity test', ( assert ) => {
+	QUnit.test( 'Constructor sanity test', function ( assert ) {
 		var step = new uw.controller.Upload( new mw.Api(), {
 			maxUploads: 10,
 			maxSimultaneousConnections: 3
@@ -49,7 +49,7 @@
 		assert.true( ufcStub.calledWith( true, false ) );
 	} );
 
-	QUnit.test( 'canTransition', ( assert ) => {
+	QUnit.test( 'canTransition', function ( assert ) {
 		var upload = {},
 			step = new uw.controller.Upload( new mw.Api(), {
 				maxSimultaneousConnections: 1

@@ -2,8 +2,9 @@
 	/**
 	 * Represents a "transport" for files to upload; using HTML5 FormData.
 	 *
-	 * @class
-	 * @mixes OO.EventEmitter
+	 * @constructor
+	 * @class mw.FormDataTransport
+	 * @mixins OO.EventEmitter
 	 * @param {mw.Api} api
 	 * @param {Object} formData Additional form fields required for upload api call
 	 * @param {Object} [config]
@@ -67,7 +68,7 @@
 			 */
 			xhr: function () {
 				var xhr = $.ajaxSettings.xhr();
-				xhr.upload.addEventListener( 'progress', ( evt ) => {
+				xhr.upload.addEventListener( 'progress', function ( evt ) {
 					var fraction = null;
 					if ( evt.lengthComputable ) {
 						fraction = parseFloat( evt.loaded / evt.total );
@@ -94,7 +95,7 @@
 	mw.FormDataTransport.prototype.createParams = function ( filename, offset ) {
 		var params = OO.cloneObject( this.formData );
 
-		Object.assign( params, {
+		$.extend( params, {
 			filename: filename,
 
 			// ignorewarnings is turned on, since warnings are presented in a
@@ -166,11 +167,11 @@
 					newPromise = $.Deferred(),
 					isLastChunk = offset + chunkSize >= fileSize,
 					thisChunkSize = isLastChunk ? ( fileSize % chunkSize ) : chunkSize;
-				prevPromise.done( () => {
+				prevPromise.done( function () {
 					transport.uploadChunk( file, offset )
 						.done( isLastChunk ? deferred.resolve : newPromise.resolve )
 						.fail( deferred.reject )
-						.progress( ( fraction ) => {
+						.progress( function ( fraction ) {
 							// The progress notifications give us per-chunk progress.
 							// Calculate progress for the whole file.
 							deferred.notify( ( offset + fraction * thisChunkSize ) / fileSize );
@@ -229,7 +230,7 @@
 		params.filesize = bytesAvailable;
 		params.chunk = chunk;
 
-		return this.post( params ).then( ( response ) => {
+		return this.post( params ).then( function ( response ) {
 			if ( response.upload && response.upload.filekey ) {
 				transport.filekey = response.upload.filekey;
 			}
@@ -256,7 +257,7 @@
 					file, offset
 				);
 			}
-		}, ( code, result ) => {
+		}, function ( code, result ) {
 			// Ain't this some great machine readable output eh
 			if (
 				result.errors &&
@@ -366,7 +367,7 @@
 		this.request = this.api.post( params );
 
 		return this.request.then(
-			( response ) => {
+			function ( response ) {
 				if ( response.upload && response.upload.result === 'Poll' ) {
 					// If concatenation takes longer than 10 minutes give up
 					if ( ( Date.now() - transport.firstPoll ) > 10 * 60 * 1000 ) {
@@ -394,7 +395,9 @@
 
 				return response;
 			},
-			( code, result ) => $.Deferred().reject( code, result )
+			function ( code, result ) {
+				return $.Deferred().reject( code, result );
+			}
 		);
 	};
 }() );

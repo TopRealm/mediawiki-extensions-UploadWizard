@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\UploadWizard;
 
-use MediaWiki\Installer\DatabaseUpdater;
+use DatabaseUpdater;
 use MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook;
 
 class SchemaHooks implements LoadExtensionSchemaUpdatesHook {

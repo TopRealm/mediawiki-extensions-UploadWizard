@@ -5,14 +5,12 @@
  * $wgUploadWizardConfig[ 'name'] =  'value';
  */
 
-use MediaWiki\Context\RequestContext;
-use MediaWiki\Language\LanguageCode;
 use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 
 global $wgFileExtensions, $wgServer, $wgScriptPath, $wgAPIModules, $wgLang,
-	$wgCheckFileExtensions, $wgWBRepoSettings;
+	$wgCheckFileExtensions;
 
 $userLangCode = $wgLang->getCode();
 // Commons only: ISO 646 code of Tagalog is 'tl', but language template is 'tgl'
@@ -87,7 +85,7 @@ $uwLanguages = $cache->getWithSetCallback(
 // List of languages CC licenses are available in, that can
 // form functional URLs ending in deed.<language code>. See T354225
 $uwCcAvailableLanguages = [
-	'an', 'ar', 'az', 'be', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el',
+	'an', 'ar', 'be', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el',
 	'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fr', 'fy', 'ga',
 	'gl', 'hi', 'hr', 'hu', 'id', 'is', 'it', 'ja', 'ko', 'lt',
 	'lv', 'ms', 'nl', 'no', 'pl', 'pt', 'pt-br', 'ro', 'ru', 'sk',
@@ -125,7 +123,7 @@ return [
 	// Flickr details
 	// Flickr API is SSL-only as of June 27th, 2014:
 	// http://code.flickr.net/2014/04/30/flickr-api-going-ssl-only-on-june-27th-2014/
-	'flickrApiUrl' => 'https://api.flickr.com/services/rest/?',
+	'flickrApiUrl' => '//api.flickr.com/services/rest/?',
 
 	// you should probably replace this with your own
 	'flickrApiKey' => 'aeefff139445d825d4460796616f9349',
@@ -151,8 +149,8 @@ return [
 		// wikitext to display above the UploadWizard UI.
 		'headerLabel' => '',
 
-		// wikitext to display on top of the final page
-		// When not provided, the message mwe-upwiz-thanks-message will be used.
+		// wikitext to display on top of the "use" page.
+		// When not provided, the message mwe-upwiz-thanks-intro will be used.
 		'thanksLabel' => '',
 
 		// checkbox label to display with each entry on the upload page to choose one image that
@@ -174,17 +172,17 @@ return [
 	// Empty array if we want to skip
 	'tutorial' => [
 		// Set to true to skip the tutorial
-		'skip' => false,
+		'skip' => true,
 
-		// Name of the tutorial on Wikimedia Commons. The $1 is replaced with the language desired.
-		'template' => 'Licensing_tutorial_$1.svg',
+		// Name of the tutorial. The $1 is replaced with the language desired.
+		'template' => 'License_Guide_($1).svg',
 
 		// The width we want to scale the tutorial to, for our interface.
 		'width' => 720,
 
 		// Imagemap coordinates of the "helpdesk" button at the bottom, which is supposed to be clickable.
 		// Empty string or false to not have an imagemap linked to the helpdesk.
-		'helpdeskCoords' => '27, 1319, 691, 1384',
+		'helpdeskCoords' => '',
 	],
 
 	// Tracking categories for various scenarios
@@ -247,18 +245,6 @@ return [
 		// This is required, because the JsonSchema for these defines them to be type number
 		// But we can't have them to be NULL, because that's not a number.
 		// This is a technical limitation of JsonSchema, I think.
-
-		//// Initial value for the latitude field.
-		//'lat' => 0,
-
-		//// Initial value for the longitude field.
-		//'lon' => 0,
-
-		//// Initial value for the altitude field. (unused)
-		//'alt' => 0,
-
-		//// Initial value for the heading field.
-		//'heading' => 0,
 	],
 
 	// 'uwLanguages' is a list of languages and codes, for use in the description step.
@@ -280,14 +266,86 @@ return [
 			'languageCodePrefix' => 'deed.',
 			'availableLanguages' => $uwCcAvailableLanguages
 		],
-		'cc-by-sa-3.0' => [
-			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-text',
-			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-explain',
-			'icons' => [ 'cc-by', 'cc-sa' ],
-			'url' => '//creativecommons.org/licenses/by-sa/3.0/',
-			'languageCodePrefix' => 'deed.',
-			'availableLanguages' => $uwCcAvailableLanguages
-		],
+        // 添加CC-BY-NC-SA-4.0许可证
+        'cc-by-nc-sa-4.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-sa-4.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-sa-4.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc', 'cc-sa' ],
+            'url' => '//creativecommons.org/licenses/by-nc-sa/4.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-4.0许可证
+        'cc-by-nc-4.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-4.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-4.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc' ],
+            'url' => '//creativecommons.org/licenses/by-nc/4.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-ND-4.0许可证
+        'cc-by-nd-4.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nd-4.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nd-4.0-explain',
+            'icons' => [ 'cc-by', 'cc-nd' ],
+            'url' => '//creativecommons.org/licenses/by-nd/4.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-ND-4.0许可证
+        'cc-by-nc-nd-4.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-nd-4.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-nd-4.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc', 'cc-nd' ],
+            'url' => '//creativecommons.org/licenses/by-nc-nd/4.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        'cc-by-sa-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-sa-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-sa' ],
+            'url' => '//creativecommons.org/licenses/by-sa/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-SA-3.0许可证
+        'cc-by-nc-sa-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-sa-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-sa-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc', 'cc-sa' ],
+            'url' => '//creativecommons.org/licenses/by-nc-sa/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-3.0许可证
+        'cc-by-nc-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc' ],
+            'url' => '//creativecommons.org/licenses/by-nc/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-ND-3.0许可证
+        'cc-by-nd-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nd-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nd-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-nd' ],
+            'url' => '//creativecommons.org/licenses/by-nd/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
+        // 添加CC-BY-NC-ND-3.0许可证
+        'cc-by-nc-nd-3.0' => [
+            'msg' => 'mwe-upwiz-license-cc-by-nc-nd-3.0-text',
+            'msgExplain' => 'mwe-upwiz-source-ownwork-cc-by-nc-nd-3.0-explain',
+            'icons' => [ 'cc-by', 'cc-nc', 'cc-nd' ],
+            'url' => '//creativecommons.org/licenses/by-nc-nd/3.0/',
+            'languageCodePrefix' => 'deed.',
+            'availableLanguages' => $uwCcAvailableLanguages
+        ],
 		'cc-by-sa-3.0-gfdl' => [
 			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-gfdl-text',
 			'templates' => [ 'GFDL', 'cc-by-sa-3.0' ],
@@ -299,6 +357,14 @@ return [
 			'templates' => [ 'cc-by-sa-3.0-at' ],
 			'icons' => [ 'cc-by', 'cc-sa' ],
 			'url' => '//creativecommons.org/licenses/by-sa/3.0/at/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-sa-3.0-cn' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-3.0-cn',
+			'templates' => [ 'cc-by-sa-3.0-cn' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/3.0/cn/',
 			'languageCodePrefix' => 'deed.',
 			'availableLanguages' => $uwCcAvailableLanguages
 		],
@@ -399,6 +465,14 @@ return [
 			'languageCodePrefix' => 'deed.',
 			'availableLanguages' => $uwCcAvailableLanguages
 		],
+		'cc-by-3.0-cn' => [
+			'msg' => 'mwe-upwiz-license-cc-by-3.0-cn',
+			'templates' => [ 'cc-by-3.0-cn' ],
+			'icons' => [ 'cc-by' ],
+			'url' => '//creativecommons.org/licenses/by/3.0/cn/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
 		'cc-zero' => [
 			'msg' => 'mwe-upwiz-license-cc-zero-text',
 			'msgExplain' => 'mwe-upwiz-source-ownwork-cc-zero-explain',
@@ -419,10 +493,26 @@ return [
 			'languageCodePrefix' => 'deed.',
 			'availableLanguages' => $uwCcAvailableLanguages
 		],
+		'cc-by-sa-2.5-cn' => [
+			'msg' => 'mwe-upwiz-license-cc-by-sa-2.5-cn',
+			'templates' => [ 'cc-by-sa-2.5-cn' ],
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'url' => '//creativecommons.org/licenses/by-sa/2.5/cn/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
 		'cc-by-2.5' => [
 			'msg' => 'mwe-upwiz-license-cc-by-2.5-text',
 			'icons' => [ 'cc-by' ],
 			'url' => '//creativecommons.org/licenses/by/2.5/',
+			'languageCodePrefix' => 'deed.',
+			'availableLanguages' => $uwCcAvailableLanguages
+		],
+		'cc-by-2.5-cn' => [
+			'msg' => 'mwe-upwiz-license-cc-by-2.5-cn',
+			'templates' => [ 'cc-by-2.5-cn' ],
+			'icons' => [ 'cc-by' ],
+			'url' => '//creativecommons.org/licenses/by/2.5/cn/',
 			'languageCodePrefix' => 'deed.',
 			'availableLanguages' => $uwCcAvailableLanguages
 		],
@@ -442,20 +532,8 @@ return [
 		],
 		'fal' => [
 			'msg' => 'mwe-upwiz-license-fal',
-			'templates' => [ 'FAL' ]
-		],
-		'pd-old-100' => [
-			'msg' => 'mwe-upwiz-license-pd-old-100',
-			'templates' => [ 'PD-old-100' ]
-		],
-		'pd-old' => [
-			'msg' => 'mwe-upwiz-license-pd-old',
-			'templates' => [ 'PD-old' ]
-		],
-		'pd-art' => [
-			'msg' => 'mwe-upwiz-license-pd-art-70',
-			'templates' => [ 'PD-Art|PD-old-70' ],
-			'url' => '//commons.wikimedia.org/wiki/Commons:Licensing#Material_in_the_public_domain',
+			'templates' => [ 'FAL' ],
+			'url' => '//artlibre.org/licence/lal/en/'
 		],
 		'pd-us-generic' => [
 			'msg' => 'mwe-upwiz-license-pd-us-generic',
@@ -489,11 +567,62 @@ return [
 			'templates' => [ 'trademarked', 'PD-textlogo' ]
 		],
 		'attribution' => [
-			'msg' => 'mwe-upwiz-license-attribution'
+			'msg' => 'mwe-upwiz-license-attribution',
+			'templates' => ['attribution'],
+		],
+		'copyrighted-free-use' => [
+			'msg' => 'mwe-upwiz-license-copyrighted-free-use',
+			'templates' => ['Copyrighted free use'],
 		],
 		'gfdl' => [
 			'msg' => 'mwe-upwiz-license-gfdl',
-			'templates' => [ 'GFDL' ]
+			'templates' => [ 'GFDL' ],
+			'url' => '//www.gnu.org/licenses/fdl-1.3.html'
+		],
+		'gfdl+cc-by-sa-3.0' => [
+			'msg' => 'mwe-upwiz-license-gfdl+cc-by-sa-3.0',
+			'icons' => [ 'cc-by', 'cc-sa' ],
+			'templates' => [ 'GFDL', 'cc-by-sa-3.0' ]
+		],
+		'gplv2' => [
+			'msg' => 'mwe-upwiz-license-gplv2',
+			'templates' => [ 'GPLv2' ],
+			'url' => '//www.gnu.org/licenses/old-licenses/gpl-2.0.html'
+		],
+		'gplv3' => [
+			'msg' => 'mwe-upwiz-license-gplv3',
+			'templates' => [ 'GPLv3' ],
+			'url' => '//www.gnu.org/licenses/gpl-3.0.html'
+		],
+		'gplv2-or-later-version' => [
+			'msg' => 'mwe-upwiz-license-gplv2-or-later-version',
+			'templates' => [ 'LGPL' ],
+			'url' => '//www.gnu.org/licenses/licenses.html#GPL'
+		],
+		'lgplv2' => [
+			'msg' => 'mwe-upwiz-license-lgplv2',
+			'templates' => [ 'LGPLv2' ],
+			'url' => '//www.gnu.org/licenses/old-licenses/lgpl-2.0.html'
+		],
+		'lgplv2.1' => [
+			'msg' => 'mwe-upwiz-license-lgplv2.1',
+			'templates' => [ 'LGPLv2.1' ],
+			'url' => '//www.gnu.org/licenses/old-licenses/lgpl-2.1.html'
+		],
+		'lgplv2.1-or-later-version' => [
+			'msg' => 'mwe-upwiz-license-lgplv2.1-or-later-version',
+			'templates' => [ 'LGPL' ],
+			'url' => '//www.gnu.org/licenses/licenses.html#LGPL'
+		],
+		'lgplv3' => [
+			'msg' => 'mwe-upwiz-license-lgplv3',
+			'templates' => [ 'LGPL' ],
+			'url' => '//www.gnu.org/licenses/lgpl-3.0.html'
+		],
+		'odbl' => [
+			'msg' => 'mwe-upwiz-license-odbl',
+			'templates' => [ 'ODbL' ],
+			'url' => '//opendatacommons.org/licenses/odbl/'
 		],
 		'none' => [
 			'msg' => 'mwe-upwiz-license-none',
@@ -508,7 +637,78 @@ return [
 			'msg' => 'mwe-upwiz-license-generic',
 			'msgExplain' => 'mwe-upwiz-source-ownwork-generic-explain',
 			'templates' => [ 'Generic' ]
-		]
+		],
+		'pd-prc-exempt' => [
+			'msg' => 'mwe-upwiz-license-pd-prc-exempt',
+			'templates' => [ 'PD-PRC-exempt' ],
+			'url' => '//flk.npc.gov.cn/detail2.html?ZmY4MDgwODE3NTJiN2Q0MzAxNzVlNDc2NmJhYjE1NTc'
+		],
+		'prc-standardmap' => [
+			'msg' => 'mwe-upwiz-license-prc-standardmap',
+			'templates' => [ 'PRC-StandardMap' ],
+			'url' => 'https://www.gov.cn/zhengce/content/2015-12/14/content_10403.htm'
+		],
+		'pd-prc-1992' => [
+			'msg' => 'mwe-upwiz-license-pd-prc-1992',
+			'templates' => [ 'PD-PRC-1992' ],
+			'url' => 'https://www.ncac.gov.cn/chinacopyright/contents/12230/346374.shtml'
+		],
+		'pd-prc-foreign' => [
+			'msg' => 'mwe-upwiz-license-pd-prc-foreign',
+			'templates' => [ 'PD-PRC-foreign' ],
+			'url' => 'https://www.ncac.gov.cn/chinacopyright/contents/12230/346374.shtml'
+		],
+		'pd-prc' => [
+			'msg' => 'mwe-upwiz-license-pd-prc',
+			'templates' => [ 'PD-PRC' ],
+			'url' => 'https://flk.npc.gov.cn/detail2.html?ZmY4MDgwODE3NTJiN2Q0MzAxNzVlNDc2NmJhYjE1NTc'
+		],
+		'pd-macau-gov' => [
+			'msg' => 'mwe-upwiz-license-macau-gov',
+			'templates' => [ 'PD-MacauGov' ],
+			'url' => 'https://bo.io.gov.mo/bo/i/99/33/declei43_cn.asp'
+		],
+		'hongkong-factsheets' => [
+			'msg' => 'mwe-upwiz-license-hongkong-factsheets',
+			'templates' => [ 'Hong Kong Fact Sheets' ],
+			'url' => 'https://www.gov.hk/sc/about/abouthk/factsheets/index.htm'
+		],
+		'non-free-cover' => [
+			'msg' => 'mwe-upwiz-license-non-free-cover',
+			'templates' => [ 'Non-free cover' ]
+		],
+		'non-free-mark' => [
+			'msg' => 'mwe-upwiz-license-non-free-mark',
+			'templates' => [ 'Non-free mark' ]
+		],
+		'non-free-portrait' => [
+			'msg' => 'mwe-upwiz-license-non-free-portrait',
+			'templates' => [ 'Non-free portrait' ]
+		],
+		'non-free-art' => [
+			'msg' => 'mwe-upwiz-license-non-free-art',
+			'templates' => [ 'Non-free art' ]
+		],
+		'non-free-historical-image' => [
+			'msg' => 'mwe-upwiz-license-non-free-historical-image',
+			'templates' => [ 'Non-free historical image' ]
+		],
+		'non-free-poster' => [
+			'msg' => 'mwe-upwiz-license-non-free-poster',
+			'templates' => [ 'Non-free poster' ]
+		],
+		'non-free-screenshot' => [
+			'msg' => 'mwe-upwiz-license-non-free-screenshot',
+			'templates' => [ 'Non-free screenshot' ]
+		],
+		'non-free-record' => [
+			'msg' => 'mwe-upwiz-license-non-free-record',
+			'templates' => [ 'Non-free record' ]
+		],
+		'non-free-page' => [
+			'msg' => 'mwe-upwiz-license-non-free-page',
+			'templates' => [ 'Non-free page' ]
+		],
 	],
 
 	'licensing' => [
@@ -524,58 +724,129 @@ return [
 		'ownWork' => [
 			'type' => 'or',
 			'template' => 'self',
+			'defaults' => 'cc-by-nc-sa-4.0',
 			'licenses' => [
-				'cc-zero',
-				'cc-by-4.0',
 				'cc-by-sa-4.0',
+				'cc-by-nc-sa-4.0',
+				'cc-by-4.0',
+				'cc-by-nc-4.0',
+				'cc-by-nd-4.0',
+				'cc-by-nc-nd-4.0',
+				'cc-by-sa-3.0',
+				'cc-by-sa-3.0-cn',
+				'cc-by-nc-sa-3.0',
+				'cc-by-3.0',
+				'cc-by-3.0-cn',
+				'cc-by-nc-3.0',
+				'cc-by-nd-3.0',
+				'cc-by-nc-nd-3.0',
+				'cc-by-sa-2.5',
+				'cc-by-sa-2.5-cn',
+				'cc-by-2.5',
+				'cc-by-2.5-cn',
+				'cc-by-sa-2.0',
+				'cc-by-2.0',
+				'cc-zero'
 			]
 		],
 
 		// checkbox selection of all licenses
 		'thirdParty' => [
 			'type' => 'or',
+			'defaults' => 'cc-by-sa-4.0',
 			'licenseGroups' => [
 				[
-					'head' => 'mwe-upwiz-license-yes-head',
-					'subhead' => 'mwe-upwiz-license-yes-subhead',
+					'head' => 'mwe-upwiz-license-cc-head',
+					'subhead' => 'mwe-upwiz-license-cc-subhead',
 					'licenses' => [
-						'cc-zero',
-						'cc-by-4.0',
-						'cc-by-3.0',
-						'cc-by-2.5',
 						'cc-by-sa-4.0',
-						'cc-by-sa-3.0',
-						'cc-by-sa-2.5',
+                        'cc-by-nc-sa-4.0',
+                        'cc-by-4.0',
+                        'cc-by-nc-4.0',
+                        'cc-by-nd-4.0',
+                        'cc-by-nc-nd-4.0',
+                        'cc-by-sa-3.0',
+                        'cc-by-sa-3.0-cn',
+                        'cc-by-nc-sa-3.0',
+                        'cc-by-3.0',
+                        'cc-by-3.0-cn',
+                        'cc-by-nc-3.0',
+                        'cc-by-nd-3.0',
+                        'cc-by-nc-nd-3.0',
+                        'cc-by-sa-2.5',
+                        'cc-by-sa-2.5-cn',
+                        'cc-by-2.5',
+                        'cc-by-2.5-cn',
+                        'cc-by-sa-2.0',
+                        'cc-by-2.0',
+                        'cc-zero'
 					]
 				],
 				[
-					'head' => 'mwe-upwiz-license-no-head',
-					'subhead' => 'mwe-upwiz-license-no-subhead',
-					'url' => [
-						'//commons.wikimedia.org/wiki/Commons:Licensing#Acceptable_licenses',
-						'//commons.wikimedia.org/wiki/Commons:Licensing#Material_in_the_public_domain',
-						'//commons.wikimedia.org/wiki/Commons:Licensing',
-						'//commons.wikimedia.org/wiki/Commons:Village_pump/Copyright',
-					],
-					'defaults' => [ 'none' ],
-					'licenses' => [ 'none' ],
+					'head' => 'mwe-upwiz-license-other-free-head',
+					'subhead' => 'mwe-upwiz-license-other-free-subhead',
+					'licenses' => [
+						'fal',
+						'gplv3',
+						'gplv2-or-later-version',
+						'gplv2',
+						'lgplv3',
+						'lgplv2.1',
+						'lgplv2.1-or-later-version',
+						'lgplv2',
+						'gfdl',
+						'gfdl+cc-by-sa-3.0',
+						'odbl',
+						'attribution',
+						'copyrighted-free-use'
+					]
 				],
 				[
-					'head' => 'mwe-upwiz-license-cc0-head',
-					'subhead' => 'mwe-upwiz-license-cc0-subhead',
-					'icons' => [ 'cc-public-domain' ],
-					'url' => '//commons.wikimedia.org/wiki/Commons:Licensing#Material_in_the_public_domain',
-					'type' => 'and',
+					'head' => 'mwe-upwiz-license-public-domain-head',
+					'subhead' => 'mwe-upwiz-license-public-domain-subhead',
 					'licenses' => [
 						'pd-us',
-						'pd-old-70',
-						'pd-usgov',
-						'pd-usgov-nasa',
-						'pd-us-generic',
+						'pd-prc-1992',
+						'pd-prc-foreign',
+						'pd-prc',
+						'pd-textlogo',
+						'pd-ineligible'
 					]
 				],
 				[
-					'head' => 'mwe-upwiz-license-other-head',
+					'head' => 'mwe-upwiz-license-cngov-head',
+					'licenses' => [
+						'pd-prc-exempt',
+						'prc-standardmap',
+						'hongkong-factsheets',
+						'pd-macau-gov'
+					]
+				],
+				[
+					'head' => 'mwe-upwiz-license-usgov-head',
+					'licenses' => [
+						'pd-usgov',
+						'pd-usgov-nasa',
+						'pd-us-generic'
+					]
+				],
+				[
+					'head' => 'mwe-upwiz-license-non-free-head',
+					'subhead' => 'mwe-upwiz-license-non-free-subhead',
+					'licenses' => [
+						'non-free-mark',
+						'non-free-cover',
+						'non-free-art',
+						'non-free-poster',
+						'non-free-historical-image',
+						'non-free-portrait',
+						'non-free-screenshot',
+						'non-free-record',
+						'non-free-page'
+					]
+				],
+				[
+					'head' => 'mwe-upwiz-license-custom-head',
 					'special' => 'custom',
 					'defaults' => [ 'custom' ],
 					'licenses' => [ 'custom' ],
@@ -613,14 +884,14 @@ return [
 	// Min source string length
 	'minSourceLength' => 5,
 
-	// Max file title string length (in bytes)
+	// Max file title string length
 	'maxTitleLength' => 240,
 
-	// Min file title string length (in characters)
+	// Min file title string length
 	'minTitleLength' => 5,
 
 	// Max file caption length
-	'maxCaptionLength' => $wgWBRepoSettings['string-limits']['multilang']['length'] ?? 250,
+	'maxCaptionLength' => 250,
 
 	// Min file caption length
 	'minCaptionLength' => 5,
@@ -701,7 +972,7 @@ return [
 
 	// Link to page containing a list of categories that the user can use for uploaded files.
 	// Shown on the Details stage, above the category selection field.
-	'allCategoriesLink' => 'https://commons.wikimedia.org/wiki/Commons:Categories',
+	'allCategoriesLink' => 'https://www.qiuwenbaike.cn/wiki/Help:%E5%88%86%E7%B1%BB',
 
 	// Title of page for alternative uploading form, e.g.:
 	//   'altUploadForm' => 'Special:Upload',
@@ -713,7 +984,7 @@ return [
 	//		'default'	=> 'Commons:Upload',
 	//		'de'		=> 'Commons:Hochladen'
 	//	 );
-	'altUploadForm' => '',
+	'altUploadForm' => 'Special:Upload',
 
 	// Wiki page that lists alternative ways to upload
 	'alternativeUploadToolsPage' => 'Commons:Upload_tools',
@@ -734,24 +1005,21 @@ return [
 	// enable structured data to go into a wikibase repository
 	'wikibase' => [
 		'enabled' => false,
-		'captions' => true,
-		'statements' => true,
+		'captions' => false,
+		'statements' => false,
+		'nonDefaultStatements' => false,
 		// url to wikibase repo API
 		'api' => $wgScriptPath . '/api.php',
-		// property ID for the date statement
-		'properties' => [
-			'date' => 'P571',
-			'source' => 'P7482',
-			'operator' => 'P137',
-			'described_at_url' => 'P973',
-		],
-		'items' => [
-			'file_available_on_the_internet' => 'Q74228490',
-		],
 	],
 
 	// extra templates that get written into the wikitext by checking a checkbox
 	'templateOptions' => [
+		'ownwork' => [
+			'aiGenerated' => [
+				'template' => '{{PD-algorithm}}',
+				'label' => 'mwe-upwiz-source-ownwork-origin-option-ai'
+			],
+		],
 		'thirdparty' => [
 			'aiGenerated' => [
 				'template' => '{{PD-algorithm}}',
@@ -762,24 +1030,5 @@ return [
 				'label' => 'mwe-upwiz-author-unknown'
 			]
 		]
-	],
-
-	// config for mapping source strings to wikidata items
-	'sourceStringToWikidataIdMapping' => [
-		'facebook' => 'Q355',
-		'fbcdn' => 'Q355',
-		'google' => 'Q95',
-		'instagram' => 'Q209330',
-		'cdninstagram' => 'Q209330',
-		'pinterest' => 'Q255381',
-		'youtube' => 'Q866',
-		'gettyimages' => 'Q1520122',
-		'reddit' => 'Q1136',
-		'shutterstock' => 'Q3482689',
-		'alamy' => 'Q263465',
-		'istockphoto' => 'Q225613',
-		'tiktok' => 'Q48938223',
-		'amazon' => 'Q3884',
-		'media-amazon' => 'Q3884',
-	],
+	]
 ];

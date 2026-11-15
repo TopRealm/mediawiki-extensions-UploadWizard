@@ -3,25 +3,24 @@
 	/**
 	 * A multi-language input field in UploadWizard's "Details" step form.
 	 *
-	 * @class
+	 * @class uw.MultipleLanguageInputWidget
 	 * @extends uw.DetailsWidget
-	 * @mixes OO.ui.mixin.GroupElement
+	 * @mixins OO.ui.mixin.GroupElement
+	 * @constructor
 	 * @param {Object} [config]
-	 * @param {boolean} [config.required=true]
-	 * @param {mw.Message} [config.label] Text for label
-	 * @param {mw.Message} [config.placeholder] Placeholder text for input field
-	 * @param {mw.Message} [config.remove] Title text for remove icon
-	 * @param {mw.Message} [config.error] Error message
-	 * @param {mw.Message} [config.errorBlank] Error message for blank input
-	 * @param {number} [config.minLength=0] Minimum input length
-	 * @param {number} [config.maxLength=99999] Maximum input length
-	 * @param {Object} [config.languages] { langcode: text } map of languages
+	 * @cfg {boolean} [required=true]
+	 * @cfg {mw.Message} [label] Text for label
+	 * @cfg {mw.Message} [placeholder] Placeholder text for input field
+	 * @cfg {mw.Message} [remove] Title text for remove icon
+	 * @cfg {mw.Message} [error] Error message
+	 * @cfg {number} [minLength=0] Minimum input length
+	 * @cfg {number} [maxLength=99999] Maximum input length
+	 * @cfg {Object} [languages] { langcode: text } map of languages
 	 */
 	uw.MultipleLanguageInputWidget = function UWMultipleLanguageInputWidget( config ) {
-		this.config = Object.assign( {
+		this.config = $.extend( {
 			required: true,
 			label: mw.message( '' ),
-			errorBlank: mw.message( 'mwe-upwiz-error-blank' ),
 			languages: this.getLanguageOptions()
 		}, config );
 		uw.MultipleLanguageInputWidget.super.call( this );
@@ -32,8 +31,10 @@
 			classes: [ 'mwe-upwiz-multipleLanguageInputWidget-addItem' ],
 			framed: true,
 			icon: 'add',
+			flags: [ 'progressive' ],
 			label: this.getLabelText()
 		} );
+		this.addButton.connect( this, { click: [ 'addLanguageInput', this.config ] } );
 
 		// if a language becomes available because the input gets removed,
 		// or unavailable because it gets added, we'll need to update other
@@ -55,9 +56,7 @@
 		);
 
 		// Add empty input (non-removable if this field is required)
-		this.addLanguageInput( Object.assign( {}, this.config, { removable: !this.required } ) );
-		// Clicking the button will add new, removable, language inputs
-		this.addButton.connect( this, { click: [ 'addLanguageInput', Object.assign( {}, this.config, { removable: true } ) ] } );
+		this.addLanguageInput( $.extend( {}, this.config, { canBeRemoved: !this.required } ) );
 	};
 	OO.inheritClass( uw.MultipleLanguageInputWidget, uw.DetailsWidget );
 	OO.mixinClass( uw.MultipleLanguageInputWidget, OO.ui.mixin.GroupElement );
@@ -80,12 +79,12 @@
 		// languages that have already been selected to show up in the next dropdown...
 		if ( config.defaultLanguage ) {
 			languages[ config.defaultLanguage ] = allLanguages[ config.defaultLanguage ];
-			languages = Object.assign( {}, languages, unusedLanguages );
+			languages = $.extend( {}, languages, unusedLanguages );
 		} else {
 			languages = unusedLanguages;
 		}
 
-		config = Object.assign( {}, config, { languages: languages } );
+		config = $.extend( {}, config, { languages: languages } );
 		item = new uw.SingleLanguageInputWidget( config );
 		item.setText( text || '' );
 
@@ -118,7 +117,7 @@
 			// languages that have already been selected to show up in the next dropdown...
 			languages = {};
 			languages[ item.getLanguage() ] = allLanguages[ item.getLanguage() ];
-			languages = Object.assign( {}, languages, unusedLanguages );
+			languages = $.extend( {}, languages, unusedLanguages );
 			item.updateLanguages( languages );
 		}
 	};
@@ -133,7 +132,7 @@
 		var allLanguages = this.config.languages,
 			items = this.getItems();
 
-		return items.reduce( ( obj, item ) => {
+		return items.reduce( function ( obj, item ) {
 			var languageCode = item.getLanguage();
 			obj[ languageCode ] = allLanguages[ languageCode ];
 			return obj;
@@ -150,7 +149,7 @@
 		var allLanguages = this.config.languages,
 			usedLanguageCodes = Object.keys( this.getUsedLanguages() );
 
-		return Object.keys( allLanguages ).reduce( ( remaining, language ) => {
+		return Object.keys( allLanguages ).reduce( function ( remaining, language ) {
 			if ( usedLanguageCodes.indexOf( language ) < 0 ) {
 				remaining[ language ] = allLanguages[ language ];
 			}
@@ -204,10 +203,12 @@
 	/**
 	 * @inheritdoc
 	 */
-	uw.MultipleLanguageInputWidget.prototype.getErrors = function ( thorough ) {
+	uw.MultipleLanguageInputWidget.prototype.getErrors = function () {
 		var self = this,
 			// Gather errors from each item
-			errorPromises = this.getItems().map( ( item ) => item.getErrors() );
+			errorPromises = this.getItems().map( function ( item ) {
+				return item.getErrors();
+			} );
 
 		return $.when.apply( $, errorPromises ).then( function () {
 			var errors = [];
@@ -218,8 +219,8 @@
 				errors.push( self.config.error );
 			}
 			// And add some more:
-			if ( thorough && this.required && this.getWikiText() === '' ) {
-				errors.push( self.config.errorBlank );
+			if ( this.required && this.getWikiText() === '' ) {
+				errors.push( mw.message( 'mwe-upwiz-error-blank' ) );
 			}
 			// TODO Check for duplicate languages
 			return errors;
@@ -227,7 +228,7 @@
 	};
 
 	/**
-	 * @return {Object} an object of `{ language code: text }` pairs
+	 * @return {Object} Object where the properties are language codes & values are input
 	 */
 	uw.MultipleLanguageInputWidget.prototype.getValues = function () {
 		var values = {},
@@ -254,7 +255,11 @@
 	uw.MultipleLanguageInputWidget.prototype.getWikiText = function () {
 		// Some code here and in mw.UploadWizardDetails relies on this function returning an empty
 		// string when there are some inputs, but all are empty.
-		return this.getItems().map( ( widget ) => widget.getWikiText() ).filter( ( wikiText ) => !!wikiText ).join( '\n' );
+		return this.getItems().map( function ( widget ) {
+			return widget.getWikiText();
+		} ).filter( function ( wikiText ) {
+			return !!wikiText;
+		} ).join( '\n' );
 	};
 
 	/**
@@ -262,7 +267,9 @@
 	 * @return {Object} See #setSerialized
 	 */
 	uw.MultipleLanguageInputWidget.prototype.getSerialized = function () {
-		var inputs = this.getItems().map( ( widget ) => widget.getSerialized() );
+		var inputs = this.getItems().map( function ( widget ) {
+			return widget.getSerialized();
+		} );
 		return {
 			inputs: inputs
 		};
@@ -282,25 +289,9 @@
 		this.removeItems( this.getItems() );
 
 		for ( i = 0; i < serialized.inputs.length; i++ ) {
-			config = Object.assign( {}, config, {
-				defaultLanguage: serialized.inputs[ i ].language,
-				removable: serialized.inputs[ i ].removable
-			} );
-
+			config = $.extend( {}, config, { defaultLanguage: serialized.inputs[ i ].language } );
 			this.addLanguageInput( config, serialized.inputs[ i ].text );
 		}
-	};
-
-	/**
-	 * @param {boolean} required
-	 */
-	uw.MultipleLanguageInputWidget.prototype.setRequired = function ( required ) {
-		this.required = !!required;
-		this.getItems()[ 0 ].setRemovable( !this.required );
-
-		// emit change event - while no content has changed, the state has, and
-		// whatever (lack of) content there was may now have become (in)valid
-		this.emit( 'change' );
 	};
 
 }( mw.uploadWizard ) );

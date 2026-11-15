@@ -180,5 +180,4 @@ class Config {
 
 		return $licenses;
 	}
-
 }

@@ -19,7 +19,8 @@
 	/**
 	 * Represents a generic deed.
 	 *
-	 * @class
+	 * @class uw.deed.Abstract
+	 * @constructor
 	 * @param {string} name The name of this step
 	 * @param {Object} config The UW config
 	 * @param {mw.UploadWizardUpload[]} uploads Array of uploads that this deed refers to
@@ -135,7 +136,7 @@
 		if ( serialized.name ) {
 			this.name = serialized.name;
 		}
-		serialized.selectedTemplateOptions.forEach( ( name ) => {
+		serialized.selectedTemplateOptions.forEach( function ( name ) {
 			self.templateOptions[ name ].input.setSelected( true );
 		} );
 	};
@@ -201,10 +202,10 @@
 			windowManager.addWindows( [ dialog ] );
 			windowManager.openWindow( dialog );
 
-			dialog.on( 'disagree', () => {
+			dialog.on( 'disagree', function () {
 				deferred.resolve( [ mw.message( 'mwe-upwiz-error-patent-disagree' ) ] );
 			} );
-			dialog.on( 'agree', () => {
+			dialog.on( 'agree', function () {
 				deed.patentAgreed = true;
 				deferred.resolve( [] );
 			} );
@@ -216,7 +217,7 @@
 	};
 
 	/**
-	 * @return {string}
+	 * @return string
 	 */
 	uw.deed.Abstract.prototype.getTemplateOptionsWikiText = function () {
 		var name, option, wikitext = '';
@@ -228,15 +229,5 @@
 		}
 		return wikitext;
 	};
-
-	/**
-	 * Only implemented for OwnWork
-	 */
-	uw.deed.Abstract.prototype.getAiPromptWikitext = function () {};
-
-	/**
-	 * Only implemented for ThirdParty
-	 */
-	uw.deed.Abstract.prototype.getStructuredDataFromSource = function () {};
 
 }( mw.uploadWizard ) );

@@ -3,7 +3,6 @@
 	 * Represents an object which send a direct request to the MediaWiki API.
 	 * This is used when there is no actual file payload (eg. Flickr import)
 	 *
-	 * @class
 	 * @param {mw.UploadWizardUpload} upload current upload
 	 * @param {mw.Api} api
 	 */
