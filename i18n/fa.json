@@ -35,7 +35,8 @@
 			"حقجوی",
 			"پسر یاس",
 			"Darafsh",
-			"LordProfo"
+			"LordProfo",
+			"LProfo"
 		]
 	},
 	"uploadwizard": "برنامۀ جادویی بارگذاری",
@@ -198,7 +199,7 @@
 	"mwe-upwiz-location-heading": "عنوان",
 	"mwe-upwiz-objref-pick-image": "افزودن یک موضوع به این تصویر",
 	"mwe-upwiz-objref-notice-existing-image": "پرونده‌ای برای موضوع اشاره‌شده موجود است.",
-	"mwe-upwiz-objref-notice-update-delay": "بروزرسانی صفحه پیوند شده ممکن است زمان‌بر باشد.",
+	"mwe-upwiz-objref-notice-update-delay": "به‌روزرسانی صفحهٔ ارجاع‌شده ممکن است زمان‌بر باشد.",
 	"mwe-upwiz-author-text": "نام پدیدآورندهٔ اصلی {{PLURAL:$1|این اثر|این آثار}} را وارد کنید.",
 	"mwe-upwiz-author-unknown": "نمی‌دانم پدیدآورنده کیست",
 	"mwe-upwiz-author-not-known": "این اطلاعات را در اختیار ندارم",
@@ -219,7 +220,7 @@
 	"mwe-upwiz-upload-error-duplicate": "این پرونده از قبل در این ویکی بارگذاری شده است.",
 	"mwe-upwiz-upload-error-duplicate-archive": "این پرونده پیش‌تر دراین ویکی بارگذاری شده بود اما حذف شد.",
 	"mwe-upwiz-upload-error-stashed-anyway": "به هر حال بارگذاری شود؟",
-	"mwe-upwiz-deleted-duplicate-unknown-filename": "اسم پرونده نامعلوم",
+	"mwe-upwiz-deleted-duplicate-unknown-filename": "نام پرونده ناشناخته",
 	"mwe-upwiz-ok": "تأیید",
 	"mwe-upwiz-fileexists-replace-on-page": "در حال حاضر پرونده‌ای با این نام وجود دارد. اگر می‌خواهید آن را جایگزین کنید، به صفحه بروید برای [$2 $1] و آن را آنجا جایگزین کنید.",
 	"mwe-upwiz-fileexists-replace-on-page-v2": "این عنوان قبلاً استفاده شده است. لطفاً یک عنوان یکتا انتخاب کنید. نکته: افزودن تاریخ، ماه یا سال اثر می‌تواند به یکتابودن آن کمک کند.",
@@ -398,6 +399,7 @@
 	"mwe-upwiz-errordialog-title": "در ثبت شما، خطایی وجود داشت.",
 	"mwe-upwiz-errordialog-ok": "تأیید",
 	"mwe-upwiz-error-nosuchcampaign": "هیچ کمپینی با نام «$1» وجود ندارد.",
+	"mwe-upwiz-campaign-invalid": "پیکربندی نامعتبر پویش: $1",
 	"mwe-upwiz-error-campaigndisabled": "کمپین «$1» فعال نشده است.",
 	"mwe-upwiz-calendar-date": "انتخاب تاریخ از تقویم",
 	"mwe-upwiz-custom-date": "انتخاب فرمت تاریخ",

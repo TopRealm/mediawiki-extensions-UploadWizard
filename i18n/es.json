@@ -43,7 +43,9 @@
 			"Yllelder",
 			"YoViajo",
 			"Diegodlh",
-			"Superzerocool"
+			"Superzerocool",
+			"Avengium",
+			"JaimeDes"
 		]
 	},
 	"uploadwizard": "Asistente de subidas",
@@ -102,6 +104,7 @@
 	"mwe-upwiz-stashed-upload": "Subido",
 	"mwe-upwiz-getting-metadata": "Obteniendo previsualizaciones y la información de archivo...",
 	"mwe-upwiz-submitting-details": "Enviando detalles…",
+	"mwe-upwiz-submitting-structured-data": "Envío de datos estructurados…",
 	"mwe-upwiz-published": "¡Publicado!",
 	"mwe-upwiz-failed": "Falló.",
 	"mwe-upwiz-remove": "Borrar",

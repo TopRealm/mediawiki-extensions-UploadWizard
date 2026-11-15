@@ -219,10 +219,9 @@ class CampaignHooks implements
 			return true;
 		}
 
-		try {
-			$content->validate();
-		} catch ( JsonSchemaException $e ) {
-			$status->fatal( $context->msg( $e->getCode(), $e->args ) );
+		$validation = $content->validate();
+		if ( !$validation->isOK() ) {
+			$status->merge( $validation );
 			// @todo Remove this line after this extension do not support mediawiki version 1.36 and before
 			$status->value = EditPage::AS_HOOK_ERROR_EXPECTED;
 			return false;
